@@ -2,8 +2,8 @@
 
 # Wait for LocalStack to be ready
 echo "Waiting for LocalStack to be ready..."
-until curl -s http://localhost:4566/_localstack/health | grep -q '"dynamodb": "running"'; do
-  echo "Waiting for DynamoDB service..."
+until awslocal dynamodb list-tables --endpoint-url=http://localhost:4566 > /dev/null 2>&1; do
+  echo "Waiting for DynamoDB service to be responsive..."
   sleep 2
 done
 
@@ -17,12 +17,10 @@ awslocal dynamodb create-table \
     --key-schema \
         AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
-    --region us-east-1 \
-    --no-cli-pager
+    --region us-east-1
 
 echo "DynamoDB table 'todos' created successfully!"
 
 # Verify table creation (without pager)
 awslocal dynamodb list-tables \
-    --region us-east-1 \
-    --no-cli-pager
+    --region us-east-1
