@@ -101,3 +101,6 @@ echo "REST API deployed successfully!"
 
 API_ENDPOINT="http://localhost:4566/restapis/$API_ID/prod/_user_request_"
 echo "Your API Endpoint is ready! You can test it at: $API_ENDPOINT"
+
+echo "API_URL=$API_ENDPOINT" > .env.test
+echo "Wrote API endpoint to .env.test file."
