@@ -20,10 +20,10 @@ resource "random_id" "bucket_suffix" {
 # S3 bucket for Terraform state (optional - for production use)
 resource "aws_s3_bucket" "terraform_state" {
   count  = var.enable_remote_state ? 1 : 0
-  bucket = "terraform-state-serverless-todo-${random_id.bucket_suffix.hex}"
+  bucket = "${var.environment}-terraform-state-serverless-todo-${random_id.bucket_suffix.hex}"
 
   tags = merge(local.common_tags, {
-    Name = "terraform-state-bucket"
+    Name = "${var.environment}-terraform-state-bucket"
     Type = "S3-Bucket"
   })
 }
@@ -60,7 +60,7 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
 # DynamoDB table for state locking (optional - for production use)
 resource "aws_dynamodb_table" "terraform_state_lock" {
   count        = var.enable_remote_state ? 1 : 0
-  name         = "terraform-state-lock"
+  name         = "${var.environment}-terraform-state-lock"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
 
@@ -70,7 +70,7 @@ resource "aws_dynamodb_table" "terraform_state_lock" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "terraform-state-lock"
+    Name = "${var.environment}-terraform-state-lock"
     Type = "DynamoDB-StateLock"
   })
 }

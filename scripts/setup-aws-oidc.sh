@@ -70,7 +70,7 @@ cat > trust-policy-dev.json << EOF
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_USERNAME}/${REPO_NAME}:ref:refs/heads/develop"
+          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_USERNAME}/${REPO_NAME}:*"
         }
       }
     }
@@ -93,7 +93,7 @@ cat > trust-policy-prod.json << EOF
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_USERNAME}/${REPO_NAME}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:${GITHUB_USERNAME}/${REPO_NAME}:*"
         }
       }
     }
@@ -178,7 +178,8 @@ cat > deployment-policy.json << EOF
         "iam:TagRole",
         "iam:UntagRole",
         "iam:TagPolicy",
-        "iam:UntagPolicy"
+        "iam:UntagPolicy",
+        "iam:ListInstanceProfilesForRole"
       ],
       "Resource": "*"
     },

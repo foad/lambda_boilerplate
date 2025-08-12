@@ -41,7 +41,7 @@ Create a file `trust-policy-dev.json`:
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/YOUR_REPO_NAME:ref:refs/heads/develop"
+          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/YOUR_REPO_NAME:*"
         }
       }
     }
@@ -77,7 +77,7 @@ Create a file `trust-policy-prod.json`:
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/YOUR_REPO_NAME:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:YOUR_GITHUB_USERNAME/YOUR_REPO_NAME:*"
         }
       }
     }
@@ -169,7 +169,8 @@ Create a file `deployment-policy.json`:
         "iam:TagRole",
         "iam:UntagRole",
         "iam:TagPolicy",
-        "iam:UntagPolicy"
+        "iam:UntagPolicy",
+        "iam:ListInstanceProfilesForRole"
       ],
       "Resource": "*"
     },

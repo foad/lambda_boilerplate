@@ -46,6 +46,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create dummy build directories
+        run: |
+          # Create minimal directory structure to satisfy Terraform data sources
+          mkdir -p dist/create-todo dist/read-todos dist/update-todo
+          echo '{}' > dist/create-todo/index.js
+          echo '{}' > dist/read-todos/index.js  
+          echo '{}' > dist/update-todo/index.js
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -60,6 +68,56 @@ jobs:
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
+
+      - name: Import existing resources into state
+        working-directory: terraform
+        run: |
+          echo "🔍 Importing existing resources for ${{ github.event.inputs.environment }}..."
+
+          # Set environment variable for resource naming
+          ENV="${{ github.event.inputs.environment }}"
+
+          # Try to import resources (ignore errors if they don't exist)
+          set +e
+
+          # Import IAM resources first (they're dependencies)
+          terraform import aws_iam_role.lambda_execution_role "${ENV}-lambda-execution-role" || echo "IAM role not found"
+          terraform import aws_iam_policy.lambda_dynamodb_policy "arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/${ENV}-lambda-dynamodb-policy" || echo "IAM policy not found"
+          terraform import aws_iam_role_policy_attachment.lambda_basic_execution "${ENV}-lambda-execution-role/arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole" || echo "Basic execution policy attachment not found"
+
+          # Get the policy ARN for the attachment
+          POLICY_ARN="arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/${ENV}-lambda-dynamodb-policy"
+          terraform import aws_iam_role_policy_attachment.lambda_dynamodb_policy_attachment "${ENV}-lambda-execution-role/${POLICY_ARN}" || echo "DynamoDB policy attachment not found"
+
+          # Import DynamoDB table
+          terraform import aws_dynamodb_table.todos "${ENV}-todos" || echo "todos table not found"
+
+          # Import Lambda functions
+          terraform import aws_lambda_function.create_todo "${ENV}-create-todo" || echo "create-todo function not found"
+          terraform import aws_lambda_function.read_todos "${ENV}-read-todos" || echo "read-todos function not found"
+          terraform import aws_lambda_function.update_todo "${ENV}-update-todo" || echo "update-todo function not found"
+
+          # Import CloudWatch Log Groups
+          terraform import aws_cloudwatch_log_group.create_todo_logs "/aws/lambda/${ENV}-create-todo" || echo "create-todo logs not found"
+          terraform import aws_cloudwatch_log_group.read_todos_logs "/aws/lambda/${ENV}-read-todos" || echo "read-todos logs not found"
+          terraform import aws_cloudwatch_log_group.update_todo_logs "/aws/lambda/${ENV}-update-todo" || echo "update-todo logs not found"
+
+          # Import API Gateway resources
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='${ENV}-todos-api'].id" --output text)
+          if [ ! -z "$API_ID" ] && [ "$API_ID" != "None" ] && [ "$API_ID" != "null" ]; then
+            echo "Found API Gateway: $API_ID"
+            terraform import aws_api_gateway_rest_api.todos_api "$API_ID" || echo "API Gateway import failed"
+            
+            # Import API Gateway deployment and stage
+            DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id "$API_ID" --query "items[0].id" --output text)
+            if [ ! -z "$DEPLOYMENT_ID" ] && [ "$DEPLOYMENT_ID" != "None" ] && [ "$DEPLOYMENT_ID" != "null" ]; then
+              terraform import aws_api_gateway_deployment.todos_api_deployment "$API_ID/$DEPLOYMENT_ID" || echo "API Gateway deployment import failed"
+              terraform import aws_api_gateway_stage.todos_api_stage "$API_ID/${ENV}" || echo "API Gateway stage import failed"
+            fi
+          fi
+
+          set -e
+          echo "✅ Import completed"
 
       - name: Terraform Plan Destroy
         working-directory: terraform
@@ -77,7 +135,7 @@ jobs:
         if: github.event.inputs.destroy_state_storage == 'true'
         working-directory: terraform
         run: |
-          echo "🗑️ Destroying Terraform state storage..."
+          echo "🗑️ Destroying Terraform state storage for ${{ github.event.inputs.environment }}..."
 
           # Get the state bucket name and lock table (if they exist)
           STATE_BUCKET=$(terraform output -raw terraform_state_bucket 2>/dev/null || echo "")
@@ -94,6 +152,8 @@ jobs:
             echo "Deleting DynamoDB table: $LOCK_TABLE"
             aws dynamodb delete-table --table-name $LOCK_TABLE
           fi
+
+          echo "✅ State storage cleanup completed for ${{ github.event.inputs.environment }}"
 
       - name: Confirm destruction
         run: |
