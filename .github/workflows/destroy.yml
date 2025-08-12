@@ -1,0 +1,73 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to destroy"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - production
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+        type: string
+
+env:
+  TERRAFORM_VERSION: "1.6.0"
+
+jobs:
+  destroy:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "destroy" ]; then
+            echo "❌ Confirmation failed. You must type 'destroy' to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ github.event.inputs.environment == 'production' && secrets.AWS_ROLE_ARN_PROD || secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-2' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan Destroy
+        working-directory: terraform
+        run: |
+          terraform plan -destroy \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="aws_region=${{ vars.AWS_REGION || 'eu-west-2' }}" \
+            -out=destroy-plan
+
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: terraform apply -auto-approve destroy-plan
+
+      - name: Confirm destruction
+        run: |
+          echo "🗑️ Infrastructure for ${{ github.event.inputs.environment }} has been destroyed"
