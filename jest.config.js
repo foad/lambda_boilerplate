@@ -8,9 +8,13 @@ module.exports = {
   },
   collectCoverageFrom: [
     "src/**/*.ts",
-    "!src/**/*.test.ts",
-    "!src/**/*.spec.ts",
+    "!src/**/*.d.ts",
+    "!src/**/*.integration.test.ts",
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
+  // Exclude integration tests by default
+  testPathIgnorePatterns: ["/node_modules/", "\\.integration\\.test\\.ts$"],
+  // Setup files
+  setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
 };
