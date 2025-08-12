@@ -91,7 +91,7 @@
   - Add AWS OIDC authentication configuration for secure deployment
   - _Requirements: 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 12. Implement Terraform deployment steps in GitHub Actions
+- [x] 12. Implement Terraform deployment steps in GitHub Actions
 
   - Add Terraform installation and initialization steps to workflow
   - Configure Terraform plan step with proper AWS credentials

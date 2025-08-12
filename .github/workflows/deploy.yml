@@ -83,16 +83,34 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
+        id: plan
         working-directory: terraform
         run: |
           terraform plan \
             -var="environment=development" \
             -var="aws_region=${{ vars.AWS_REGION || 'eu-west-2' }}" \
             -out=tfplan
+        continue-on-error: true
+
+      - name: Check Terraform Plan Status
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "❌ Terraform plan failed!"
+          echo "Please check the plan output above for errors."
+          exit 1
 
       - name: Terraform Apply
+        id: apply
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
+
+      - name: Handle Apply Failure
+        if: failure() && steps.apply.outcome == 'failure'
+        run: |
+          echo "❌ Terraform apply failed!"
+          echo "Infrastructure may be in an inconsistent state."
+          echo "Check the logs above and consider running terraform destroy if needed."
+          exit 1
 
       - name: Get API Gateway URL
         working-directory: terraform
@@ -144,16 +162,34 @@ jobs:
         run: terraform init
 
       - name: Terraform Plan
+        id: plan-prod
         working-directory: terraform
         run: |
           terraform plan \
             -var="environment=production" \
             -var="aws_region=${{ vars.AWS_REGION || 'eu-west-2' }}" \
             -out=tfplan
+        continue-on-error: true
+
+      - name: Check Terraform Plan Status
+        if: steps.plan-prod.outcome == 'failure'
+        run: |
+          echo "❌ Terraform plan failed for production!"
+          echo "Please check the plan output above for errors."
+          exit 1
 
       - name: Terraform Apply
+        id: apply-prod
         working-directory: terraform
         run: terraform apply -auto-approve tfplan
+
+      - name: Handle Apply Failure
+        if: failure() && steps.apply-prod.outcome == 'failure'
+        run: |
+          echo "❌ Production deployment failed!"
+          echo "Infrastructure may be in an inconsistent state."
+          echo "Please check the logs and consider manual intervention."
+          exit 1
 
       - name: Get API Gateway URL
         working-directory: terraform
