@@ -89,6 +89,4 @@ output "api_gateway_stage_name" {
   value       = aws_api_gateway_stage.todos_api_stage.stage_name
 }
 
-# Note: Remote state is now managed externally via setup script
-# S3 bucket: terraform-state-serverless-todo-api
-# State files: environments/{environment}/terraform.tfstate
+

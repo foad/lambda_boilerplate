@@ -99,7 +99,15 @@
   - Add error handling and clear failure messaging for deployment issues
   - _Requirements: 6.3, 6.6_
 
-- [ ] 13. Implement smoke tests for deployed infrastructure
+- [x] 13. Create project documentation and setup instructions
+
+  - Write comprehensive README.md with project overview and setup instructions
+  - Document local development workflow including LocalStack usage
+  - Create deployment guide with OIDC configuration steps
+  - Add API documentation with endpoint specifications and example requests
+  - _Requirements: 1.1, 1.3 - supporting developer experience_
+
+- [ ] 14. Implement smoke tests for deployed infrastructure
 
   - Create smoke test suite that validates deployed API endpoints
   - Write tests that make actual HTTP requests to deployed API Gateway
@@ -107,10 +115,3 @@
   - Add smoke test workflow that runs after successful production deployment
   - Configure tests to use deployed API URL from Terraform outputs
   - _Requirements: 6.1, 6.2 - ensuring deployment validation_
-
-- [ ] 14. Create project documentation and setup instructions
-  - Write comprehensive README.md with project overview and setup instructions
-  - Document local development workflow including LocalStack usage
-  - Create deployment guide with OIDC configuration steps
-  - Add API documentation with endpoint specifications and example requests
-  - _Requirements: 1.1, 1.3 - supporting developer experience_

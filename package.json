@@ -1,5 +1,5 @@
 {
-  "name": "serverless-todo-api",
+  "name": "lambda_boilerplate",
   "version": "1.0.0",
   "description": "A serverless todo API built with AWS Lambda, DynamoDB, and API Gateway",
   "main": "dist/index.js",
@@ -15,7 +15,6 @@
     "start-local": "./scripts/start-local.sh",
     "stop-local": "./scripts/stop-local.sh",
     "deploy-local": "./scripts/deploy-local.sh",
-    "test-local": "./scripts/test-local.sh",
     "local:setup": "npm run start-local && npm run deploy-local"
   },
   "keywords": [
