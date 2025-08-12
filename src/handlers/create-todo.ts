@@ -63,8 +63,6 @@ export const handler = async (
     const putCommand = new PutCommand({
       TableName: tableName,
       Item: newTodo,
-      // Ensure we don't overwrite existing items with the same ID (though UUID collision is extremely unlikely)
-      ConditionExpression: "attribute_not_exists(id)",
     });
 
     await dynamoClient.send(putCommand);
@@ -73,16 +71,6 @@ export const handler = async (
     return createSuccessResponse(newTodo, 201);
   } catch (error) {
     console.error("Error creating todo:", error);
-
-    // Handle specific DynamoDB errors
-    if (
-      error instanceof Error &&
-      error.name === "ConditionalCheckFailedException"
-    ) {
-      return createInternalErrorResponse("Todo with this ID already exists", {
-        errorType: "DUPLICATE_ID",
-      });
-    }
 
     // Handle other errors
     return createInternalErrorResponse("Failed to create todo", {

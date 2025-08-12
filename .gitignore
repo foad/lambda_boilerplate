@@ -34,4 +34,12 @@ Thumbs.db
 logs/
 
 # Runtime files
-response.json
+ Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraformrc
+terraform.rc

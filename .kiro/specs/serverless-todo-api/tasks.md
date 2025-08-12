@@ -59,7 +59,7 @@
   - Configure local endpoint URLs and environment variables for development
   - _Requirements: Integration testing requirements from design document_
 
-- [ ] 8. Implement Terraform infrastructure for DynamoDB
+- [x] 8. Implement Terraform infrastructure for DynamoDB
 
   - Create terraform/main.tf with provider configuration and common tags
   - Implement DynamoDB table resource in terraform/dynamodb.tf with proper schema
@@ -67,7 +67,7 @@
   - Set up consistent resource tagging for application grouping
   - _Requirements: 5.2, 5.6, 7.1, 7.2, 7.3, 7.4_
 
-- [ ] 9. Implement Terraform infrastructure for Lambda functions
+- [x] 9. Implement Terraform infrastructure for Lambda functions
 
   - Create IAM roles and policies for Lambda execution in terraform/iam.tf
   - Implement Lambda function resources in terraform/lambda.tf with proper configuration
@@ -75,7 +75,7 @@
   - Set up Lambda function packaging and deployment from built artifacts
   - _Requirements: 5.1, 5.4, 7.1, 7.2_
 
-- [ ] 10. Implement Terraform infrastructure for API Gateway
+- [x] 10. Implement Terraform infrastructure for API Gateway
 
   - Create API Gateway REST API resource in terraform/api-gateway.tf
   - Configure API Gateway resources and methods for all three endpoints

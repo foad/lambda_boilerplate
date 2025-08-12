@@ -21,6 +21,6 @@ awslocal dynamodb create-table \
 
 echo "DynamoDB table 'todos' created successfully!"
 
-# Verify table creation (without pager)
+# Verify table creation
 awslocal dynamodb list-tables \
     --region us-east-1
