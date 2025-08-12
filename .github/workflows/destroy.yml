@@ -61,6 +61,37 @@ jobs:
         working-directory: terraform
         run: terraform init
 
+      - name: Import existing resources into state
+        working-directory: terraform
+        run: |
+          echo "🔍 Importing existing resources for ${{ github.event.inputs.environment }}..."
+
+          # Set environment variable for resource naming
+          ENV="${{ github.event.inputs.environment }}"
+
+          # Try to import resources (ignore errors if they don't exist)
+          set +e
+
+          # Import Lambda functions
+          terraform import aws_lambda_function.create_todo "${ENV}-create-todo" || echo "create-todo function not found"
+          terraform import aws_lambda_function.read_todos "${ENV}-read-todos" || echo "read-todos function not found"
+          terraform import aws_lambda_function.update_todo "${ENV}-update-todo" || echo "update-todo function not found"
+
+          # Import DynamoDB table
+          terraform import aws_dynamodb_table.todos "${ENV}-todos" || echo "todos table not found"
+
+          # Import API Gateway
+          API_ID=$(aws apigateway get-rest-apis --query "items[?name=='${ENV}-todos-api'].id" --output text)
+          if [ ! -z "$API_ID" ] && [ "$API_ID" != "None" ]; then
+            terraform import aws_api_gateway_rest_api.todos_api "$API_ID" || echo "API Gateway not found"
+          fi
+
+          # Import IAM role
+          terraform import aws_iam_role.lambda_execution_role "${ENV}-lambda-execution-role" || echo "IAM role not found"
+
+          set -e
+          echo "✅ Import completed"
+
       - name: Terraform Plan Destroy
         working-directory: terraform
         run: |
@@ -77,7 +108,7 @@ jobs:
         if: github.event.inputs.destroy_state_storage == 'true'
         working-directory: terraform
         run: |
-          echo "🗑️ Destroying Terraform state storage..."
+          echo "🗑️ Destroying Terraform state storage for ${{ github.event.inputs.environment }}..."
 
           # Get the state bucket name and lock table (if they exist)
           STATE_BUCKET=$(terraform output -raw terraform_state_bucket 2>/dev/null || echo "")
@@ -94,6 +125,8 @@ jobs:
             echo "Deleting DynamoDB table: $LOCK_TABLE"
             aws dynamodb delete-table --table-name $LOCK_TABLE
           fi
+
+          echo "✅ State storage cleanup completed for ${{ github.event.inputs.environment }}"
 
       - name: Confirm destruction
         run: |
