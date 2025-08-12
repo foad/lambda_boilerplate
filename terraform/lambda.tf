@@ -32,7 +32,6 @@ resource "aws_lambda_function" "create_todo" {
   environment {
     variables = {
       TODOS_TABLE_NAME = aws_dynamodb_table.todos.name
-      AWS_REGION       = var.aws_region
     }
   }
 
@@ -57,7 +56,6 @@ resource "aws_lambda_function" "read_todos" {
   environment {
     variables = {
       TODOS_TABLE_NAME = aws_dynamodb_table.todos.name
-      AWS_REGION       = var.aws_region
     }
   }
 
@@ -82,7 +80,6 @@ resource "aws_lambda_function" "update_todo" {
   environment {
     variables = {
       TODOS_TABLE_NAME = aws_dynamodb_table.todos.name
-      AWS_REGION       = var.aws_region
     }
   }
 

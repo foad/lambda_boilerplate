@@ -1,0 +1,105 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to destroy"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - production
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+        type: string
+      destroy_state_storage:
+        description: "Also destroy Terraform state storage (S3 + DynamoDB)?"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TERRAFORM_VERSION: "1.6.0"
+
+jobs:
+  destroy:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "destroy" ]; then
+            echo "❌ Confirmation failed. You must type 'destroy' to proceed."
+            exit 1
+          fi
+          echo "✅ Confirmation validated"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ github.event.inputs.environment == 'production' && secrets.AWS_ROLE_ARN_PROD || secrets.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ vars.AWS_REGION || 'eu-west-2' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan Destroy
+        working-directory: terraform
+        run: |
+          terraform plan -destroy \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -var="aws_region=${{ vars.AWS_REGION || 'eu-west-2' }}" \
+            -out=destroy-plan
+
+      - name: Terraform Destroy
+        working-directory: terraform
+        run: terraform apply -auto-approve destroy-plan
+
+      - name: Destroy State Storage (Optional)
+        if: github.event.inputs.destroy_state_storage == 'true'
+        working-directory: terraform
+        run: |
+          echo "🗑️ Destroying Terraform state storage..."
+
+          # Get the state bucket name and lock table (if they exist)
+          STATE_BUCKET=$(terraform output -raw terraform_state_bucket 2>/dev/null || echo "")
+          LOCK_TABLE=$(terraform output -raw terraform_state_lock_table 2>/dev/null || echo "")
+
+          if [ ! -z "$STATE_BUCKET" ] && [ "$STATE_BUCKET" != "null" ]; then
+            echo "Emptying S3 bucket: $STATE_BUCKET"
+            aws s3 rm s3://$STATE_BUCKET --recursive
+            echo "Deleting S3 bucket: $STATE_BUCKET"
+            aws s3 rb s3://$STATE_BUCKET
+          fi
+
+          if [ ! -z "$LOCK_TABLE" ] && [ "$LOCK_TABLE" != "null" ]; then
+            echo "Deleting DynamoDB table: $LOCK_TABLE"
+            aws dynamodb delete-table --table-name $LOCK_TABLE
+          fi
+
+      - name: Confirm destruction
+        run: |
+          echo "🗑️ Infrastructure for ${{ github.event.inputs.environment }} has been destroyed"
+          if [ "${{ github.event.inputs.destroy_state_storage }}" == "true" ]; then
+            echo "🗑️ Terraform state storage has also been destroyed"
+          else
+            echo "💾 Terraform state storage was preserved"
+          fi

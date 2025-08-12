@@ -83,7 +83,7 @@
   - Implement Lambda integrations with appropriate permissions
   - _Requirements: 5.1, 5.5, 7.1, 7.2_
 
-- [ ] 11. Create GitHub Actions workflow for automated deployment
+- [x] 11. Create GitHub Actions workflow for automated deployment
 
   - Set up workflow file at .github/workflows/deploy.yml with proper triggers
   - Configure Node.js environment and dependency installation steps
@@ -91,7 +91,7 @@
   - Add AWS OIDC authentication configuration for secure deployment
   - _Requirements: 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 12. Implement Terraform deployment steps in GitHub Actions
+- [x] 12. Implement Terraform deployment steps in GitHub Actions
 
   - Add Terraform installation and initialization steps to workflow
   - Configure Terraform plan step with proper AWS credentials

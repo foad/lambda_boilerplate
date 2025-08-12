@@ -21,3 +21,9 @@ variable "table_name" {
   type        = string
   default     = "todos"
 }
+
+variable "enable_remote_state" {
+  description = "Enable remote state storage with S3 and DynamoDB"
+  type        = bool
+  default     = false
+}
