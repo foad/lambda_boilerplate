@@ -169,7 +169,8 @@ Create a file `deployment-policy.json`:
         "iam:TagRole",
         "iam:UntagRole",
         "iam:TagPolicy",
-        "iam:UntagPolicy"
+        "iam:UntagPolicy",
+        "iam:ListInstanceProfilesForRole"
       ],
       "Resource": "*"
     },

@@ -178,7 +178,8 @@ cat > deployment-policy.json << EOF
         "iam:TagRole",
         "iam:UntagRole",
         "iam:TagPolicy",
-        "iam:UntagPolicy"
+        "iam:UntagPolicy",
+        "iam:ListInstanceProfilesForRole"
       ],
       "Resource": "*"
     },
