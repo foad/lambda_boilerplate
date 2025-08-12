@@ -23,7 +23,7 @@ beforeEach(() => {
   process.env = {
     ...originalEnv,
     TODOS_TABLE_NAME: "test-todos-table",
-    AWS_REGION: "us-east-1",
+    AWS_REGION: "eu-west-2",
   };
 });
 

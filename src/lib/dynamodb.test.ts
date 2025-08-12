@@ -12,7 +12,7 @@ beforeEach(() => {
   // Reset environment variables
   process.env = {
     ...originalEnv,
-    AWS_REGION: "us-east-1",
+    AWS_REGION: "eu-west-2",
     TODOS_TABLE_NAME: "test-todos-table",
   };
 });
@@ -44,7 +44,7 @@ describe("DynamoDB Utilities", () => {
       // We can't easily test the internal region config, but we can verify it creates a client
     });
 
-    test("should default to us-east-1 when AWS_REGION is not set", () => {
+    test("should default to eu-west-2 when AWS_REGION is not set", () => {
       delete process.env.AWS_REGION;
 
       const client = getDynamoClient();

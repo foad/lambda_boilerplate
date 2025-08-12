@@ -36,14 +36,14 @@ describe("Todo API E2E Integration Tests", () => {
       throw new Error("API_URL environment variable is not set");
     }
 
-    process.env.AWS_REGION = "us-east-1";
+    process.env.AWS_REGION = "eu-west-2";
     process.env.AWS_ENDPOINT_URL = "http://localhost:4566";
     process.env.TODOS_TABLE_NAME = "todos";
     process.env.AWS_ACCESS_KEY_ID = "test";
     process.env.AWS_SECRET_ACCESS_KEY = "test";
 
     const client = new DynamoDBClient({
-      region: "us-east-1",
+      region: "eu-west-2",
       endpoint: "http://localhost:4566",
       credentials: {
         accessKeyId: "test",

@@ -17,10 +17,10 @@ awslocal dynamodb create-table \
     --key-schema \
         AttributeName=id,KeyType=HASH \
     --billing-mode PAY_PER_REQUEST \
-    --region us-east-1
+    --region eu-west-2
 
 echo "DynamoDB table 'todos' created successfully!"
 
 # Verify table creation
 awslocal dynamodb list-tables \
-    --region us-east-1
+    --region eu-west-2

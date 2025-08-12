@@ -43,7 +43,7 @@ The local environment uses:
 
 - **LocalStack Endpoint:** http://localhost:4566
 - **DynamoDB Table:** todos
-- **AWS Region:** us-east-1
+- **AWS Region:** eu-west-2
 - **AWS Credentials:** test/test (LocalStack defaults)
 
 ### API Endpoints
