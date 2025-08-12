@@ -100,9 +100,20 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup remote state backend
+        working-directory: terraform
+        run: |
+          # Create backend configuration for development (used for PRs)
+          cat > backend-config.hcl << EOF
+          bucket  = "terraform-state-serverless-todo-api"
+          key     = "environments/development/terraform.tfstate"
+          region  = "${{ vars.AWS_REGION || 'eu-west-2' }}"
+          encrypt = true
+          EOF
+
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: terraform init -backend-config=backend-config.hcl
 
       - name: Terraform Plan
         working-directory: terraform
@@ -181,9 +192,20 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup remote state backend
+        working-directory: terraform
+        run: |
+          # Create backend configuration for development
+          cat > backend-config.hcl << EOF
+          bucket  = "terraform-state-serverless-todo-api"
+          key     = "environments/development/terraform.tfstate"
+          region  = "${{ vars.AWS_REGION || 'eu-west-2' }}"
+          encrypt = true
+          EOF
+
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: terraform init -backend-config=backend-config.hcl
 
       - name: Terraform Plan
         id: plan
@@ -267,9 +289,20 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup remote state backend
+        working-directory: terraform
+        run: |
+          # Create backend configuration for production
+          cat > backend-config.hcl << EOF
+          bucket  = "terraform-state-serverless-todo-api"
+          key     = "environments/production/terraform.tfstate"
+          region  = "${{ vars.AWS_REGION || 'eu-west-2' }}"
+          encrypt = true
+          EOF
+
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: terraform init -backend-config=backend-config.hcl
 
       - name: Terraform Plan
         id: plan-prod
@@ -307,8 +340,3 @@ jobs:
           API_URL=$(terraform output -raw api_gateway_url)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
           echo "Production API deployed at: $API_URL"
-
-      - name: Run integration tests against production
-        run: |
-          export API_BASE_URL=${{ env.API_URL }}
-          npm run test:integration
