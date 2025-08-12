@@ -139,6 +139,7 @@ cat > deployment-policy.json << EOF
         "lambda:DeleteFunction",
         "lambda:GetFunction",
         "lambda:GetFunctionConfiguration",
+        "lambda:GetFunctionCodeSigningConfig",
         "lambda:ListFunctions",
         "lambda:ListVersionsByFunction",
         "lambda:UpdateFunctionCode",

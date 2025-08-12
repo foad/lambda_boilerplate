@@ -132,6 +132,7 @@ Create a file `deployment-policy.json`:
         "lambda:DeleteFunction",
         "lambda:GetFunction",
         "lambda:GetFunctionConfiguration",
+        "lambda:GetFunctionCodeSigningConfig",
         "lambda:ListFunctions",
         "lambda:ListVersionsByFunction",
         "lambda:UpdateFunctionCode",
