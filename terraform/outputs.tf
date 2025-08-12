@@ -89,13 +89,6 @@ output "api_gateway_stage_name" {
   value       = aws_api_gateway_stage.todos_api_stage.stage_name
 }
 
-# Remote state outputs (when enabled)
-output "terraform_state_bucket" {
-  description = "S3 bucket for Terraform state"
-  value       = var.enable_remote_state ? aws_s3_bucket.terraform_state[0].bucket : null
-}
-
-output "terraform_state_lock_table" {
-  description = "DynamoDB table for Terraform state locking"
-  value       = var.enable_remote_state ? aws_dynamodb_table.terraform_state_lock[0].name : null
-}
+# Note: Remote state is now managed externally via setup script
+# S3 bucket: terraform-state-serverless-todo-api
+# State files: environments/{environment}/terraform.tfstate

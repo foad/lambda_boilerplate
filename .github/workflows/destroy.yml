@@ -65,9 +65,20 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup remote state backend
+        working-directory: terraform
+        run: |
+          # Create backend configuration for the selected environment
+          cat > backend-config.hcl << EOF
+          bucket  = "terraform-state-serverless-todo-api"
+          key     = "environments/${{ github.event.inputs.environment }}/terraform.tfstate"
+          region  = "${{ vars.AWS_REGION || 'eu-west-2' }}"
+          encrypt = true
+          EOF
+
       - name: Terraform Init
         working-directory: terraform
-        run: terraform init
+        run: terraform init -backend-config=backend-config.hcl
 
       - name: Import existing resources into state
         working-directory: terraform
@@ -133,27 +144,20 @@ jobs:
 
       - name: Destroy State Storage (Optional)
         if: github.event.inputs.destroy_state_storage == 'true'
-        working-directory: terraform
         run: |
           echo "🗑️ Destroying Terraform state storage for ${{ github.event.inputs.environment }}..."
+          echo "⚠️  WARNING: This will delete the state file for ${{ github.event.inputs.environment }}"
+          echo "⚠️  You will lose track of any remaining infrastructure in this environment"
 
-          # Get the state bucket name and lock table (if they exist)
-          STATE_BUCKET=$(terraform output -raw terraform_state_bucket 2>/dev/null || echo "")
-          LOCK_TABLE=$(terraform output -raw terraform_state_lock_table 2>/dev/null || echo "")
+          # Delete the specific environment's state file
+          BUCKET_NAME="terraform-state-serverless-todo-api"
+          STATE_KEY="environments/${{ github.event.inputs.environment }}/terraform.tfstate"
 
-          if [ ! -z "$STATE_BUCKET" ] && [ "$STATE_BUCKET" != "null" ]; then
-            echo "Emptying S3 bucket: $STATE_BUCKET"
-            aws s3 rm s3://$STATE_BUCKET --recursive
-            echo "Deleting S3 bucket: $STATE_BUCKET"
-            aws s3 rb s3://$STATE_BUCKET
-          fi
-
-          if [ ! -z "$LOCK_TABLE" ] && [ "$LOCK_TABLE" != "null" ]; then
-            echo "Deleting DynamoDB table: $LOCK_TABLE"
-            aws dynamodb delete-table --table-name $LOCK_TABLE
-          fi
+          echo "🗑️ Deleting state file: s3://$BUCKET_NAME/$STATE_KEY"
+          aws s3 rm "s3://$BUCKET_NAME/$STATE_KEY" || echo "State file not found or already deleted"
 
           echo "✅ State storage cleanup completed for ${{ github.event.inputs.environment }}"
+          echo "ℹ️  Note: S3 bucket is shared between environments and was not deleted"
 
       - name: Confirm destruction
         run: |
