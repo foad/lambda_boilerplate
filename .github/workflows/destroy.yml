@@ -46,6 +46,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create dummy build directories
+        run: |
+          # Create minimal directory structure to satisfy Terraform data sources
+          mkdir -p dist/create-todo dist/read-todos dist/update-todo
+          echo '{}' > dist/create-todo/index.js
+          echo '{}' > dist/read-todos/index.js  
+          echo '{}' > dist/update-todo/index.js
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
