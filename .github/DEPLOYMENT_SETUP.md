@@ -110,7 +110,12 @@ Create a file `deployment-policy.json`:
         "dynamodb:ListTables",
         "dynamodb:TagResource",
         "dynamodb:UntagResource",
+        "dynamodb:ListTagsOfResource",
         "dynamodb:UpdateTable",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:UpdateTimeToLive",
         "dynamodb:PutItem",
         "dynamodb:GetItem",
         "dynamodb:UpdateItem",
@@ -128,6 +133,7 @@ Create a file `deployment-policy.json`:
         "lambda:GetFunction",
         "lambda:GetFunctionConfiguration",
         "lambda:ListFunctions",
+        "lambda:ListVersionsByFunction",
         "lambda:UpdateFunctionCode",
         "lambda:UpdateFunctionConfiguration",
         "lambda:TagResource",
@@ -153,6 +159,7 @@ Create a file `deployment-policy.json`:
         "iam:AttachRolePolicy",
         "iam:DetachRolePolicy",
         "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
         "iam:CreatePolicy",
         "iam:DeletePolicy",
         "iam:GetPolicy",
@@ -314,3 +321,15 @@ Check GitHub Actions logs for detailed error messages. Common fixes:
 3. Use separate AWS accounts for dev/prod (recommended)
 4. Regularly rotate and audit permissions
 5. Monitor CloudTrail for deployment activities
+
+## Permission Notes
+
+The permissions listed above have been tested and verified to work with the complete Terraform configuration, including:
+
+- **DynamoDB**: Full table management with point-in-time recovery, TTL, and tagging
+- **Lambda**: Function creation, updates, and permission management
+- **API Gateway**: Complete REST API setup with CORS
+- **IAM**: Role and policy management for Lambda execution
+- **CloudWatch**: Log group management
+
+These permissions follow the principle of least privilege while ensuring all Terraform operations can complete successfully.
