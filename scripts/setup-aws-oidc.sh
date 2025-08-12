@@ -189,6 +189,7 @@ cat > deployment-policy.json << EOF
         "logs:DeleteLogGroup",
         "logs:DescribeLogGroups",
         "logs:PutRetentionPolicy",
+        "logs:ListTagsForResource",
         "logs:TagLogGroup",
         "logs:UntagLogGroup"
       ],

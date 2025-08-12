@@ -180,6 +180,7 @@ Create a file `deployment-policy.json`:
         "logs:DeleteLogGroup",
         "logs:DescribeLogGroups",
         "logs:PutRetentionPolicy",
+        "logs:ListTagsForResource",
         "logs:TagLogGroup",
         "logs:UntagLogGroup"
       ],
