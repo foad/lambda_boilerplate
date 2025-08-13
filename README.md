@@ -1,7 +1,6 @@
-# Serverless Todo API
+# Lambda Boilerplate
 
-[![Test](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/test.yml)
-[![Deploy](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/actions/workflows/deploy.yml)
+[![CI/CD Pipeline](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml)
 
 A cost-effective serverless todo API built with AWS Lambda, DynamoDB, and API Gateway. This project demonstrates modern serverless architecture with TypeScript, automated CI/CD deployment via GitHub Actions, and comprehensive local development support using LocalStack.
 
