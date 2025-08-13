@@ -1,7 +1,7 @@
 # API Gateway REST API
 resource "aws_api_gateway_rest_api" "todos_api" {
   name        = "${var.environment}-todos-api"
-  description = "Serverless Todo API"
+  description = "Todo API"
 
   endpoint_configuration {
     types = ["REGIONAL"]

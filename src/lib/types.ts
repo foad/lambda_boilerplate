@@ -1,5 +1,5 @@
 /**
- * Core data models and type definitions for the serverless todo API
+ * Core data models and type definitions
  */
 
 export interface Todo {

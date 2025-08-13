@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # AWS OIDC Setup Script for GitHub Actions
-# This script helps set up AWS OIDC authentication for the serverless todo API
+# This script helps set up AWS OIDC authentication
 
 set -e
 

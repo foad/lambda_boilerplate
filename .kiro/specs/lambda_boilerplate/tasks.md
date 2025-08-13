@@ -107,7 +107,7 @@
   - Add API documentation with endpoint specifications and example requests
   - _Requirements: 1.1, 1.3 - supporting developer experience_
 
-- [ ] 14. Implement smoke tests for deployed infrastructure
+- [x] 14. Implement smoke tests for deployed infrastructure
 
   - Create smoke test suite that validates deployed API endpoints
   - Write tests that make actual HTTP requests to deployed API Gateway

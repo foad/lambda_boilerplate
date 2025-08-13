@@ -32,7 +32,7 @@ print_status "Validating GitHub Actions deployment setup..."
 
 # Check if workflow files exist
 WORKFLOWS_DIR=".github/workflows"
-REQUIRED_WORKFLOWS=("deploy.yml" "test.yml" "destroy.yml")
+REQUIRED_WORKFLOWS=("ci-cd.yml" "destroy.yml" "smoke-tests.yml")
 
 for workflow in "${REQUIRED_WORKFLOWS[@]}"; do
     if [[ -f "$WORKFLOWS_DIR/$workflow" ]]; then
@@ -60,7 +60,7 @@ else
 fi
 
 # Check package.json for required scripts
-REQUIRED_SCRIPTS=("build" "test" "test:coverage" "test:integration" "lint")
+REQUIRED_SCRIPTS=("build" "test" "test:coverage" "test:integration" "test:smoke" "lint")
 
 if [[ -f "package.json" ]]; then
     for script in "${REQUIRED_SCRIPTS[@]}"; do
@@ -102,6 +102,30 @@ if [[ -n "$(find . -name "*.test.ts" -type f)" ]]; then
     print_success "Test files exist"
 else
     print_warning "No test files found (*.test.ts)"
+fi
+
+# Check if smoke tests exist
+if [[ -f "src/smoke-tests/smoke.test.ts" ]]; then
+    print_success "Smoke tests exist"
+else
+    print_error "Missing smoke tests (src/smoke-tests/smoke.test.ts)"
+    exit 1
+fi
+
+# Check if smoke test script exists
+if [[ -f "scripts/run-smoke-tests.sh" ]] && [[ -x "scripts/run-smoke-tests.sh" ]]; then
+    print_success "Smoke test script exists and is executable"
+else
+    print_error "Missing or non-executable smoke test script"
+    exit 1
+fi
+
+# Check if deployment URL script exists
+if [[ -f "scripts/get-deployment-urls.sh" ]] && [[ -x "scripts/get-deployment-urls.sh" ]]; then
+    print_success "Deployment URL script exists and is executable"
+else
+    print_error "Missing or non-executable deployment URL script"
+    exit 1
 fi
 
 # Validate workflow syntax (basic check)

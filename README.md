@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml)
 
-A cost-effective serverless todo API built with AWS Lambda, DynamoDB, and API Gateway. This project demonstrates modern serverless architecture with TypeScript, automated CI/CD deployment via GitHub Actions, and comprehensive local development support using LocalStack.
+A boilerplate repository that can be cloned and modified to quickly spin up nearly-free APIs using AWS Lambda.
 
 ## 🚀 Features
 
@@ -216,17 +216,19 @@ const completedTodo = await completeResponse.json();
 
 ### Available Scripts
 
-| Script                     | Description                                     |
-| -------------------------- | ----------------------------------------------- |
-| `npm run start-local`      | Start LocalStack and initialize DynamoDB table  |
-| `npm run deploy-local`     | Build and deploy Lambda functions to LocalStack |
-| `npm run stop-local`       | Stop LocalStack containers                      |
-| `npm run local:setup`      | Complete setup (start + deploy)                 |
-| `npm test`                 | Run unit tests                                  |
-| `npm run test:integration` | Run integration tests against LocalStack        |
-| `npm run test:coverage`    | Run tests with coverage report                  |
-| `npm run build`            | Build TypeScript and package Lambda functions   |
-| `npm run lint`             | Run ESLint on source code                       |
+| Script                             | Description                                     |
+| ---------------------------------- | ----------------------------------------------- |
+| `npm run start-local`              | Start LocalStack and initialize DynamoDB table  |
+| `npm run deploy-local`             | Build and deploy Lambda functions to LocalStack |
+| `npm run stop-local`               | Stop LocalStack containers                      |
+| `npm run local:setup`              | Complete setup (start + deploy)                 |
+| `npm test`                         | Run unit tests                                  |
+| `npm run test:integration`         | Run integration tests against LocalStack        |
+| `npm run test:smoke`               | Run smoke tests against deployed API            |
+| `npm run test:coverage`            | Run tests with coverage report                  |
+| `./scripts/get-deployment-urls.sh` | Get latest deployment URLs for all environments |
+| `npm run build`                    | Build TypeScript and package Lambda functions   |
+| `npm run lint`                     | Run ESLint on source code                       |
 
 ### Local Environment Configuration
 
@@ -337,6 +339,32 @@ See [.github/REMOTE_STATE_SETUP.md](.github/REMOTE_STATE_SETUP.md) for detailed 
    git push origin main
    ```
 
+#### Accessing Deployment URLs
+
+After successful deployments, API URLs are available in multiple ways:
+
+1. **GitHub Deployments Page**: Visit `https://github.com/YOUR_USERNAME/YOUR_REPO/deployments`
+
+   - Shows deployment history with live API URLs
+   - Includes deployment status and smoke test results
+   - Click on any deployment to see the environment URL
+
+2. **Using the deployment script**:
+
+   ```bash
+   # Get URLs for all environments
+   ./scripts/get-deployment-urls.sh
+
+   # Get URL for specific environment
+   ./scripts/get-deployment-urls.sh --environment production
+   ```
+
+3. **From Terraform outputs**:
+   ```bash
+   cd terraform
+   terraform output api_gateway_url
+   ```
+
 #### Manual Operations
 
 - **Destroy Infrastructure**: Use the "Destroy Infrastructure" workflow in GitHub Actions
@@ -362,7 +390,8 @@ Each deployment follows these steps:
 
 3. **Validation Phase**:
    - Verify deployment success
-   - Run smoke tests (if configured)
+   - Run automated smoke tests against production API
+   - Validate critical user journeys and error handling
 
 ### Cost Estimation
 
@@ -498,11 +527,27 @@ Each deployment follows these steps:
    # Run integration tests (requires local environment)
    npm run test:integration
 
+   # Run smoke tests (requires deployed API)
+   npm run test:smoke
+
    # Generate coverage report
    npm run test:coverage
    ```
 
-4. **Code Quality**:
+4. **Smoke Tests**:
+
+   ```bash
+   # Run smoke tests against deployed API
+   ./scripts/run-smoke-tests.sh --environment production
+
+   # Or against a specific URL
+   ./scripts/run-smoke-tests.sh --url https://your-api-url.amazonaws.com/production
+
+   # Or using environment variable
+   API_BASE_URL="https://your-api-url.amazonaws.com/production" npm run test:smoke
+   ```
+
+5. **Code Quality**:
 
    ```bash
    # Lint code
