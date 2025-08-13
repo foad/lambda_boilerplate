@@ -237,12 +237,60 @@ jobs:
           echo "Check the logs above and consider running terraform destroy if needed."
           exit 1
 
+      - name: Record deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'development',
+              description: 'Development deployment (failed)',
+              auto_merge: false,
+              required_contexts: []
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'failure',
+              description: 'Development deployment failed',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
       - name: Get API Gateway URL
         working-directory: terraform
         run: |
           API_URL=$(terraform output -raw api_gateway_url)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
           echo "Development API deployed at: $API_URL"
+
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'development',
+              description: 'Development deployment',
+              auto_merge: false,
+              required_contexts: []
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: '${{ env.API_URL }}',
+              description: 'Development API is live',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
 
   deploy-prod:
     name: Deploy to Production
@@ -334,9 +382,57 @@ jobs:
           echo "Please check the logs and consider manual intervention."
           exit 1
 
+      - name: Record deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              description: 'Production deployment (failed)',
+              auto_merge: false,
+              required_contexts: []
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'failure',
+              description: 'Production deployment failed',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
+
       - name: Get API Gateway URL
         working-directory: terraform
         run: |
           API_URL=$(terraform output -raw api_gateway_url)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
           echo "Production API deployed at: $API_URL"
+
+      - name: Create deployment record
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              description: 'Production deployment',
+              auto_merge: false,
+              required_contexts: []
+            });
+
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deployment.data.id,
+              state: 'success',
+              environment_url: '${{ env.API_URL }}',
+              description: 'Production API is live',
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            });
