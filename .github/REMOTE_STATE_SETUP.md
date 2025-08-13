@@ -1,6 +1,6 @@
 # Terraform Remote State Setup
 
-This guide explains how to set up Terraform remote state storage for the serverless todo API project using S3 with native locking.
+This guide explains how to set up Terraform remote state storage using S3 with native locking.
 
 ## Overview
 

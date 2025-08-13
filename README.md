@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/foad/lambda_boilerplate/actions/workflows/ci-cd.yml)
 
-A cost-effective serverless todo API built with AWS Lambda, DynamoDB, and API Gateway. This project demonstrates modern serverless architecture with TypeScript, automated CI/CD deployment via GitHub Actions, and comprehensive local development support using LocalStack.
+A boilerplate repository that can be cloned and modified to quickly spin up nearly-free APIs using AWS Lambda.
 
 ## 🚀 Features
 

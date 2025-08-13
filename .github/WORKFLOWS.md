@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This document describes the GitHub Actions workflows configured for the Serverless Todo API.
+This document describes the GitHub Actions workflows that have been configured.
 
 ## Workflows Overview
 
