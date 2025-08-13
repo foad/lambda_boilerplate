@@ -1,19 +1,10 @@
-import fetch from "node-fetch";
 import * as dotenv from "dotenv";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { clearTodosTable } from "../lib/test-utils";
 
-// Load environment variables from the .env.test file
 dotenv.config({ path: ".env.test" });
 
-// The URL of your LocalStack API Gateway endpoint, read from the environment
 const API_URL = process.env.API_URL;
 
-// Define the shape of your application's data objects
 interface Todo {
   id: string;
   title: string;
@@ -28,48 +19,19 @@ interface ApiResponse<T> {
 }
 
 describe("Todo API E2E Integration Tests", () => {
-  let dynamoClient: DynamoDBDocumentClient;
-  const tableName = process.env.TODOS_TABLE_NAME || "todos";
-
-  beforeAll(() => {
+  beforeAll(async () => {
     if (!API_URL) {
       throw new Error("API_URL environment variable is not set");
     }
 
     process.env.AWS_REGION = "eu-west-2";
     process.env.AWS_ENDPOINT_URL = "http://localhost:4566";
-    process.env.TODOS_TABLE_NAME = "todos";
     process.env.AWS_ACCESS_KEY_ID = "test";
     process.env.AWS_SECRET_ACCESS_KEY = "test";
-
-    const client = new DynamoDBClient({
-      region: "eu-west-2",
-      endpoint: "http://localhost:4566",
-      credentials: {
-        accessKeyId: "test",
-        secretAccessKey: "test",
-      },
-    });
-    dynamoClient = DynamoDBDocumentClient.from(client);
   });
 
   beforeEach(async () => {
-    const scanResult = await dynamoClient.send(
-      new ScanCommand({
-        TableName: tableName,
-      })
-    );
-
-    if (scanResult.Items) {
-      for (const item of scanResult.Items) {
-        await dynamoClient.send(
-          new DeleteCommand({
-            TableName: tableName,
-            Key: { id: item.id },
-          })
-        );
-      }
-    }
+    await clearTodosTable();
   });
 
   it("should create, read, and update todos end-to-end", async () => {

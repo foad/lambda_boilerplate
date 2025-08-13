@@ -13,8 +13,12 @@ module.exports = {
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
-  // Exclude integration tests by default
-  testPathIgnorePatterns: ["/node_modules/", "\\.integration\\.test\\.ts$"],
+  // Exclude integration and smoke tests by default
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "\\.integration\\.test\\.ts$",
+    "smoke\\.test\\.ts$",
+  ],
   // Setup files
   setupFilesAfterEnv: ["<rootDir>/src/test-setup.ts"],
 };
