@@ -115,3 +115,13 @@
   - Add smoke test workflow that runs after successful production deployment
   - Configure tests to use deployed API URL from Terraform outputs
   - _Requirements: 6.1, 6.2 - ensuring deployment validation_
+
+- [x] 15. Create boilerplate customization setup guide
+
+  - Create SETUP_GUIDE.md in project root with comprehensive customization instructions
+  - Document all files that contain "todo" references that need to be updated
+  - List all configuration files that need project-specific values (package.json, terraform variables, etc.)
+  - Provide step-by-step checklist for transforming the boilerplate into a new project
+  - Include examples of common customizations (changing API endpoints, data models, etc.)
+  - Add guidance on what to keep vs. what to modify for different project types
+  - _Requirements: 1.1, 1.3 - supporting developer experience and project reusability_
