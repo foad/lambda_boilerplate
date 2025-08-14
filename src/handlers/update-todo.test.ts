@@ -32,7 +32,36 @@ afterEach(() => {
 });
 
 // Helper function to create mock API Gateway event
-function createMockEvent(todoId: string | null): APIGatewayProxyEvent {
+function createMockEvent(
+  todoId: string | null,
+  userId: string = "test-user-123"
+): APIGatewayProxyEvent {
+  return {
+    body: null,
+    headers: {},
+    multiValueHeaders: {},
+    httpMethod: "PUT",
+    isBase64Encoded: false,
+    path: `/todos/${todoId}/complete`,
+    pathParameters: todoId !== null ? { id: todoId } : null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      authorizer: {
+        claims: {
+          sub: userId,
+          email: "test@example.com",
+          "cognito:username": "testuser",
+        },
+      },
+    } as any,
+    resource: "",
+  };
+}
+
+// Helper function to create mock event without authentication
+function createMockEventNoAuth(todoId: string | null): APIGatewayProxyEvent {
   return {
     body: null,
     headers: {},
@@ -52,6 +81,7 @@ function createMockEvent(todoId: string | null): APIGatewayProxyEvent {
 // Sample todo for testing
 const sampleTodo: Todo = {
   id: "123e4567-e89b-42d3-a456-426614174000",
+  userId: "test-user-123",
   title: "Test Todo",
   status: "pending",
   createdAt: "2023-01-01T00:00:00.000Z",
@@ -59,6 +89,121 @@ const sampleTodo: Todo = {
 };
 
 describe("Update Todo Handler", () => {
+  describe("Authentication Error Cases", () => {
+    test("should return 400 when user claims are missing", async () => {
+      const todoId = "123e4567-e89b-42d3-a456-426614174000";
+      const event = {
+        ...createMockEvent(todoId),
+        requestContext: {
+          authorizer: {},
+        } as any,
+      };
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(400);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+
+    test("should return 400 when user ID is missing from claims", async () => {
+      const todoId = "123e4567-e89b-42d3-a456-426614174000";
+      const event = {
+        ...createMockEvent(todoId),
+        requestContext: {
+          authorizer: {
+            claims: {
+              email: "test@example.com",
+            },
+          },
+        } as unknown,
+      };
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(400);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+
+    test("should work with anonymous user when authentication is disabled", async () => {
+      const todoId = "123e4567-e89b-42d3-a456-426614174000";
+      const event = createMockEventNoAuth(todoId);
+
+      const anonymousTodo: Todo = {
+        ...sampleTodo,
+        userId: "anonymous",
+      };
+
+      const updatedTodo: Todo = {
+        ...anonymousTodo,
+        status: "completed",
+        updatedAt: "2023-01-01T01:00:00.000Z",
+      };
+
+      dynamoMock.on(GetCommand).resolves({
+        Item: anonymousTodo,
+      });
+
+      dynamoMock.on(UpdateCommand).resolves({
+        Attributes: updatedTodo,
+      });
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(200);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.data.userId).toBe("anonymous");
+    });
+  });
+
+  describe("User Ownership Cases", () => {
+    test("should return 404 when todo belongs to different user", async () => {
+      const todoId = "123e4567-e89b-42d3-a456-426614174000";
+      const event = createMockEvent(todoId, "user-1");
+
+      const otherUserTodo: Todo = {
+        ...sampleTodo,
+        userId: "user-2", // Different user
+      };
+
+      dynamoMock.on(GetCommand).resolves({
+        Item: otherUserTodo,
+      });
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(404);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("NOT_FOUND");
+      expect(responseBody.error.message).toBe("Todo not found");
+
+      // Should not call UpdateCommand
+      expect(dynamoMock.commandCalls(UpdateCommand)).toHaveLength(0);
+    });
+
+    test("should return 404 when conditional check fails on update", async () => {
+      const todoId = "123e4567-e89b-42d3-a456-426614174000";
+      const event = createMockEvent(todoId);
+
+      dynamoMock.on(GetCommand).resolves({
+        Item: sampleTodo,
+      });
+
+      const conditionalError = new Error("Conditional check failed");
+      conditionalError.name = "ConditionalCheckFailedException";
+      dynamoMock.on(UpdateCommand).rejects(conditionalError);
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(404);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("NOT_FOUND");
+      expect(responseBody.error.message).toBe("Todo not found");
+    });
+  });
   describe("Success Cases", () => {
     test("should update todo status to completed successfully", async () => {
       // Arrange
@@ -105,9 +250,15 @@ describe("Update Todo Handler", () => {
       expect(updateCall.args[0].input.UpdateExpression).toBe(
         "SET #status = :status, #updatedAt = :updatedAt"
       );
+      expect(updateCall.args[0].input.ConditionExpression).toBe(
+        "userId = :userId"
+      );
       expect(
         updateCall.args[0].input.ExpressionAttributeValues[":status"]
       ).toBe("completed");
+      expect(
+        updateCall.args[0].input.ExpressionAttributeValues[":userId"]
+      ).toBe("test-user-123");
     });
   });
 

@@ -143,7 +143,7 @@
   - Ensure backward compatibility by making authentication configurable via environment variable
   - _Requirements: Secure API endpoints with authentication_
 
-- [ ] 18 Update Lambda handlers for user context
+- [x] 18 Update Lambda handlers for user context
 
   - Update Lambda handlers to extract and use user information from JWT claims
   - Create authentication utilities for extracting user context from API Gateway events

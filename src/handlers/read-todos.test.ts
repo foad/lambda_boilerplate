@@ -28,7 +28,33 @@ afterEach(() => {
 });
 
 // Helper function to create mock API Gateway event
-const createMockEvent = (): APIGatewayProxyEvent => ({
+const createMockEvent = (
+  userId: string = "test-user-123"
+): APIGatewayProxyEvent => ({
+  httpMethod: "GET",
+  path: "/todos",
+  pathParameters: null,
+  queryStringParameters: null,
+  headers: {},
+  multiValueHeaders: {},
+  body: null,
+  isBase64Encoded: false,
+  requestContext: {
+    authorizer: {
+      claims: {
+        sub: userId,
+        email: "test@example.com",
+        "cognito:username": "testuser",
+      },
+    },
+  } as any,
+  resource: "",
+  stageVariables: null,
+  multiValueQueryStringParameters: null,
+});
+
+// Helper function to create mock event without authentication
+const createMockEventNoAuth = (): APIGatewayProxyEvent => ({
   httpMethod: "GET",
   path: "/todos",
   pathParameters: null,
@@ -44,6 +70,43 @@ const createMockEvent = (): APIGatewayProxyEvent => ({
 });
 
 describe("read-todos handler", () => {
+  describe("Authentication Error Cases", () => {
+    it("should return 400 when user claims are missing", async () => {
+      const event = {
+        ...createMockEvent(),
+        requestContext: {
+          authorizer: {},
+        } as any,
+      };
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(400);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+
+    it("should return 400 when user ID is missing from claims", async () => {
+      const event = {
+        ...createMockEvent(),
+        requestContext: {
+          authorizer: {
+            claims: {
+              email: "test@example.com",
+            },
+          },
+        } as any,
+      };
+
+      const result = await handler(event);
+
+      expect(result.statusCode).toBe(400);
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+  });
   it("should return empty array when no todos exist", async () => {
     // Mock DynamoDB scan to return empty result
     dynamoMock.on(ScanCommand).resolves({
@@ -67,6 +130,7 @@ describe("read-todos handler", () => {
     const mockTodos: Todo[] = [
       {
         id: "todo-1",
+        userId: "test-user-123",
         title: "First todo",
         status: "pending",
         createdAt: "2023-01-01T00:00:00.000Z",
@@ -74,6 +138,7 @@ describe("read-todos handler", () => {
       },
       {
         id: "todo-2",
+        userId: "test-user-123",
         title: "Second todo",
         status: "completed",
         createdAt: "2023-01-02T00:00:00.000Z",
@@ -135,22 +200,46 @@ describe("read-todos handler", () => {
     expect(responseBody.data).toEqual([]);
   });
 
-  it("should call DynamoDB scan with correct parameters", async () => {
+  it("should call DynamoDB scan with correct parameters and user filter", async () => {
     dynamoMock.on(ScanCommand).resolves({
       Items: [],
       Count: 0,
       ScannedCount: 0,
     });
 
-    const event = createMockEvent();
+    const event = createMockEvent("test-user-123");
     await handler(event);
 
-    // Verify that ScanCommand was called with correct table name
+    // Verify that ScanCommand was called with correct table name and user filter
     expect(dynamoMock.commandCalls(ScanCommand)).toHaveLength(1);
     const scanCall = dynamoMock.commandCalls(ScanCommand)[0];
     expect(scanCall.args[0].input).toEqual({
       TableName: "test-todos-table",
+      FilterExpression: "userId = :userId",
+      ExpressionAttributeValues: {
+        ":userId": "test-user-123",
+      },
     });
+  });
+
+  it("should work with anonymous user when authentication is disabled", async () => {
+    dynamoMock.on(ScanCommand).resolves({
+      Items: [],
+      Count: 0,
+      ScannedCount: 0,
+    });
+
+    const event = createMockEventNoAuth();
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(200);
+
+    // Verify that ScanCommand was called with anonymous user filter
+    expect(dynamoMock.commandCalls(ScanCommand)).toHaveLength(1);
+    const scanCall = dynamoMock.commandCalls(ScanCommand)[0];
+    expect(scanCall.args[0].input.ExpressionAttributeValues[":userId"]).toBe(
+      "anonymous"
+    );
   });
 
   it("should handle missing TODOS_TABLE_NAME environment variable", async () => {

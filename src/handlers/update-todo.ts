@@ -14,6 +14,7 @@ import {
 } from "../lib/responses";
 import { validateTodoId } from "../utils/validation";
 import { Todo } from "../lib/types";
+import { getUserId, isAuthError } from "../lib/auth";
 
 /**
  * Lambda handler for updating a todo item to completed status
@@ -22,6 +23,16 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    // Extract user context from the request
+    const userIdResult = getUserId(event);
+    if (typeof userIdResult !== "string") {
+      return createValidationErrorResponse("Authentication failed", {
+        error: userIdResult.message,
+        code: userIdResult.code,
+      });
+    }
+    const userId = userIdResult;
+
     // Extract todo ID from path parameters
     const todoId = event.pathParameters?.id;
 
@@ -37,7 +48,7 @@ export const handler = async (
     const dynamoClient = getDynamoClient();
     const tableName = getTableName();
 
-    // First, check if the todo exists
+    // First, check if the todo exists and belongs to the user
     const getCommand = new GetCommand({
       TableName: tableName,
       Key: { id: todoId },
@@ -47,6 +58,13 @@ export const handler = async (
 
     if (!getResult.Item) {
       return createNotFoundResponse("Todo not found");
+    }
+
+    const existingTodo = getResult.Item as Todo;
+
+    // Check if the todo belongs to the authenticated user
+    if (existingTodo.userId !== userId) {
+      return createNotFoundResponse("Todo not found"); // Don't reveal that the todo exists but belongs to another user
     }
 
     // Update the todo status to completed and update timestamp
@@ -63,7 +81,9 @@ export const handler = async (
       ExpressionAttributeValues: {
         ":status": "completed",
         ":updatedAt": now,
+        ":userId": userId,
       },
+      ConditionExpression: "userId = :userId", // Additional security check
       ReturnValues: "ALL_NEW",
     });
 
@@ -74,6 +94,14 @@ export const handler = async (
     return createSuccessResponse(updatedTodo, 200);
   } catch (error) {
     console.error("Error updating todo:", error);
+
+    // Handle ConditionalCheckFailedException (user doesn't own the todo)
+    if (
+      error instanceof Error &&
+      error.name === "ConditionalCheckFailedException"
+    ) {
+      return createNotFoundResponse("Todo not found");
+    }
 
     // Handle DynamoDB errors and other failures
     return createInternalErrorResponse("Failed to update todo", {

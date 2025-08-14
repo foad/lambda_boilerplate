@@ -27,7 +27,36 @@ afterEach(() => {
 });
 
 // Helper function to create mock API Gateway event
-function createMockEvent(body: string | null): APIGatewayProxyEvent {
+function createMockEvent(
+  body: string | null,
+  userId: string = "test-user-123"
+): APIGatewayProxyEvent {
+  return {
+    body,
+    headers: {},
+    multiValueHeaders: {},
+    httpMethod: "POST",
+    isBase64Encoded: false,
+    path: "/todos",
+    pathParameters: null,
+    queryStringParameters: null,
+    multiValueQueryStringParameters: null,
+    stageVariables: null,
+    requestContext: {
+      authorizer: {
+        claims: {
+          sub: userId,
+          email: "test@example.com",
+          "cognito:username": "testuser",
+        },
+      },
+    } as any,
+    resource: "",
+  };
+}
+
+// Helper function to create mock event without authentication
+function createMockEventNoAuth(body: string | null): APIGatewayProxyEvent {
   return {
     body,
     headers: {},
@@ -63,6 +92,7 @@ describe("Create Todo Handler", () => {
       expect(responseBody.data).toBeDefined();
       expect(responseBody.data.title).toBe("Test Todo");
       expect(responseBody.data.status).toBe("pending");
+      expect(responseBody.data.userId).toBe("test-user-123");
       expect(responseBody.data.id).toBeDefined();
       expect(responseBody.data.createdAt).toBeDefined();
       expect(responseBody.data.updatedAt).toBeDefined();
@@ -73,6 +103,7 @@ describe("Create Todo Handler", () => {
       expect(putCall.args[0].input.TableName).toBe("test-todos-table");
       expect(putCall.args[0].input.Item.title).toBe("Test Todo");
       expect(putCall.args[0].input.Item.status).toBe("pending");
+      expect(putCall.args[0].input.Item.userId).toBe("test-user-123");
     });
 
     test("should trim whitespace from title", async () => {
@@ -93,7 +124,72 @@ describe("Create Todo Handler", () => {
     });
   });
 
+  describe("Authentication Error Cases", () => {
+    test("should return 400 when user claims are missing", async () => {
+      // Arrange
+      const requestBody = { title: "Test Todo" };
+      const event = {
+        ...createMockEvent(JSON.stringify(requestBody)),
+        requestContext: {
+          authorizer: {},
+        } as any,
+      };
+
+      // Act
+      const result = await handler(event);
+
+      // Assert
+      expect(result.statusCode).toBe(400);
+
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+
+    test("should return 400 when user ID is missing from claims", async () => {
+      // Arrange
+      const requestBody = { title: "Test Todo" };
+      const event = {
+        ...createMockEvent(JSON.stringify(requestBody)),
+        requestContext: {
+          authorizer: {
+            claims: {
+              email: "test@example.com",
+            },
+          },
+        } as unknown,
+      };
+
+      // Act
+      const result = await handler(event);
+
+      // Assert
+      expect(result.statusCode).toBe(400);
+
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.error.code).toBe("VALIDATION_ERROR");
+      expect(responseBody.error.message).toBe("Authentication failed");
+    });
+  });
+
   describe("Validation Error Cases", () => {
+    test("should work with anonymous user when authentication is disabled", async () => {
+      // Arrange
+      const requestBody = { title: "Test Todo" };
+      const event = createMockEventNoAuth(JSON.stringify(requestBody));
+
+      dynamoMock.on(PutCommand).resolves({});
+
+      // Act
+      const result = await handler(event);
+
+      // Assert
+      expect(result.statusCode).toBe(201);
+
+      const responseBody = JSON.parse(result.body);
+      expect(responseBody.data.userId).toBe("anonymous");
+    });
+
     test("should return 400 when body is null", async () => {
       // Arrange
       const event = createMockEvent(null);

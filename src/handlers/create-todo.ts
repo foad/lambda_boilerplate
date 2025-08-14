@@ -17,6 +17,7 @@ import {
   parseRequestBody,
 } from "../utils/validation";
 import { Todo, CreateTodoRequest } from "../lib/types";
+import { getUserId, isAuthError } from "../lib/auth";
 
 /**
  * Lambda handler for creating a new todo item
@@ -25,6 +26,16 @@ export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    // Extract user context from the request
+    const userIdResult = getUserId(event);
+    if (typeof userIdResult !== "string") {
+      return createValidationErrorResponse("Authentication failed", {
+        error: userIdResult.message,
+        code: userIdResult.code,
+      });
+    }
+    const userId = userIdResult;
+
     // Parse and validate request body
     let requestBody: CreateTodoRequest;
 
@@ -46,10 +57,11 @@ export const handler = async (
       });
     }
 
-    // Generate new todo item
+    // Generate new todo item with user scoping
     const now = new Date().toISOString();
     const newTodo: Todo = {
       id: uuidv4(),
+      userId: userId,
       title: requestBody.title.trim(),
       status: "pending",
       createdAt: now,
