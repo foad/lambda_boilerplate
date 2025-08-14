@@ -309,6 +309,50 @@ After successful deployments, API URLs are available on the **GitHub Deployments
 - **Destroy Infrastructure**: Use the "Destroy Infrastructure" workflow in GitHub Actions
 - **Manual Deploy**: Trigger workflows manually from the Actions tab
 
+##### Destroying Infrastructure
+
+The "Destroy Infrastructure" workflow allows you to tear down AWS resources for a specific environment. Here's what you need to know:
+
+**What Gets Destroyed:**
+
+- All AWS infrastructure (Lambda functions, API Gateway, DynamoDB tables, IAM roles, etc.)
+- CloudWatch log groups and their contents
+
+**What Gets Preserved by Default:**
+
+- Terraform state storage (S3 bucket and DynamoDB locking table)
+- The state file itself (marked as destroyed but preserved for audit)
+
+**How to Use:**
+
+1. Go to **Actions** → **Destroy Infrastructure** in GitHub
+2. Click **Run workflow**
+3. Select the environment (`development` or `production`)
+4. Type `destroy` to confirm
+5. Optionally check **"Also destroy Terraform state storage"** if you want to delete the state file
+
+**Complete Cleanup:**
+
+If you want to completely remove everything including shared state storage:
+
+1. **Destroy both environments** with state storage option enabled
+2. **Manually delete shared resources** (only after both environments are destroyed):
+
+   ```bash
+   # Delete the S3 bucket
+   aws s3 rb s3://terraform-state-serverless-todo-api --force
+
+   # Delete the DynamoDB locking table
+   aws dynamodb delete-table --table-name terraform-state-lock-serverless-todo-api
+   ```
+
+**⚠️ Important Notes:**
+
+- Each environment has its own state file - destroying development state doesn't affect production and vice-versa
+- The S3 bucket and DynamoDB table are shared between environments (only deleted in manual cleanup)
+- Without state files, Terraform can't track remaining resources
+- Always destroy development before production if doing complete cleanup
+
 ### Cost Estimation
 
 | Component            | Idle Cost             | Light Usage (1000 requests/month) |
