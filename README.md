@@ -186,7 +186,7 @@ const completedTodo = await completeResponse.json();
 ### Prerequisites
 
 - **Docker and Docker Compose** - For running LocalStack
-- **Node.js 18+** - Runtime environment
+- **Node.js 22+** - Runtime environment
 - **AWS CLI** - For LocalStack interaction (optional)
 
 ### Quick Start
@@ -216,19 +216,18 @@ const completedTodo = await completeResponse.json();
 
 ### Available Scripts
 
-| Script                             | Description                                     |
-| ---------------------------------- | ----------------------------------------------- |
-| `npm run start-local`              | Start LocalStack and initialize DynamoDB table  |
-| `npm run deploy-local`             | Build and deploy Lambda functions to LocalStack |
-| `npm run stop-local`               | Stop LocalStack containers                      |
-| `npm run local:setup`              | Complete setup (start + deploy)                 |
-| `npm test`                         | Run unit tests                                  |
-| `npm run test:integration`         | Run integration tests against LocalStack        |
-| `npm run test:smoke`               | Run smoke tests against deployed API            |
-| `npm run test:coverage`            | Run tests with coverage report                  |
-| `./scripts/get-deployment-urls.sh` | Get latest deployment URLs for all environments |
-| `npm run build`                    | Build TypeScript and package Lambda functions   |
-| `npm run lint`                     | Run ESLint on source code                       |
+| Script                     | Description                                     |
+| -------------------------- | ----------------------------------------------- |
+| `npm run start-local`      | Start LocalStack and initialize DynamoDB table  |
+| `npm run deploy-local`     | Build and deploy Lambda functions to LocalStack |
+| `npm run stop-local`       | Stop LocalStack containers                      |
+| `npm run local:setup`      | Complete setup (start + deploy)                 |
+| `npm test`                 | Run unit tests                                  |
+| `npm run test:integration` | Run integration tests against LocalStack        |
+| `npm run test:smoke`       | Run smoke tests against deployed API            |
+| `npm run test:coverage`    | Run tests with coverage report                  |
+| `npm run build`            | Build TypeScript and package Lambda functions   |
+| `npm run lint`             | Run ESLint on source code                       |
 
 ### Local Environment Configuration
 
@@ -245,7 +244,7 @@ The local development environment uses:
 Once LocalStack is running, you can test the API:
 
 ```bash
-# Get the API Gateway URL from LocalStack logs or use the integration tests
+# Get the API Gateway URL from LocalStack logs
 # The URL format is: http://localhost:4566/restapis/{api-id}/production/_user_request_
 
 # Create a todo
@@ -257,36 +256,7 @@ curl -X POST http://localhost:4566/restapis/{api-id}/production/_user_request_/t
 curl http://localhost:4566/restapis/{api-id}/production/_user_request_/todos
 ```
 
-### Troubleshooting Local Development
-
-**LocalStack not starting:**
-
-- Ensure Docker is running
-- Check port 4566 is not in use
-- Try `docker-compose down` then `npm run start-local`
-
-**Lambda functions not deploying:**
-
-- Run `npm run build` first
-- Check LocalStack logs: `docker-compose logs localstack`
-- Ensure AWS CLI is configured (even with dummy credentials)
-
-**Tests failing:**
-
-- Verify LocalStack is running: `curl http://localhost:4566/health`
-- Check DynamoDB table exists: `aws --endpoint-url=http://localhost:4566 dynamodb list-tables`
-
 ## 🚀 Deployment
-
-This project uses GitHub Actions for automated deployment to AWS with secure OIDC authentication.
-
-### Deployment Environments
-
-| Environment       | Branch    | Auto-Deploy  | Description                         |
-| ----------------- | --------- | ------------ | ----------------------------------- |
-| **Development**   | `develop` | ✅ Yes       | Development environment for testing |
-| **Production**    | `main`    | ✅ Yes       | Production environment              |
-| **Pull Requests** | Any       | 📋 Plan Only | Shows Terraform plan in PR comments |
 
 ### Initial Setup
 
@@ -309,9 +279,7 @@ Follow the comprehensive setup guide in [.github/DEPLOYMENT_SETUP.md](.github/DE
 
 - `AWS_REGION`: AWS region for deployment (default: `eu-west-2`)
 
-#### 3. Optional: Remote State Setup
-
-For team collaboration, set up Terraform remote state:
+#### 3. Remote State Setup
 
 ```bash
 # Run the setup script for each environment
@@ -327,71 +295,19 @@ See [.github/REMOTE_STATE_SETUP.md](.github/REMOTE_STATE_SETUP.md) for detailed 
 
 1. **Development**: Push to `develop` branch
 
-   ```bash
-   git checkout develop
-   git push origin develop
-   ```
-
-2. **Production**: Push to `main` branch
-   ```bash
-   git checkout main
-   git merge develop
-   git push origin main
-   ```
+2. **Production**: Merge a PR into the `main` branch
 
 #### Accessing Deployment URLs
 
-After successful deployments, API URLs are available in multiple ways:
+After successful deployments, API URLs are available on the **GitHub Deployments Page**:
 
-1. **GitHub Deployments Page**: Visit `https://github.com/YOUR_USERNAME/YOUR_REPO/deployments`
-
-   - Shows deployment history with live API URLs
-   - Includes deployment status and smoke test results
-   - Click on any deployment to see the environment URL
-
-2. **Using the deployment script**:
-
-   ```bash
-   # Get URLs for all environments
-   ./scripts/get-deployment-urls.sh
-
-   # Get URL for specific environment
-   ./scripts/get-deployment-urls.sh --environment production
-   ```
-
-3. **From Terraform outputs**:
-   ```bash
-   cd terraform
-   terraform output api_gateway_url
-   ```
+- Visit `https://github.com/foad/lambda_boilerplate/deployments`
+- Click on any deployment to see the environment URL
 
 #### Manual Operations
 
 - **Destroy Infrastructure**: Use the "Destroy Infrastructure" workflow in GitHub Actions
 - **Manual Deploy**: Trigger workflows manually from the Actions tab
-
-### Deployment Process
-
-Each deployment follows these steps:
-
-1. **Build Phase**:
-
-   - Install Node.js dependencies
-   - Run tests and linting
-   - Compile TypeScript
-   - Package Lambda functions
-
-2. **Infrastructure Phase**:
-
-   - Configure AWS credentials via OIDC
-   - Initialize Terraform with remote state
-   - Plan infrastructure changes
-   - Apply changes (on main/develop branches)
-
-3. **Validation Phase**:
-   - Verify deployment success
-   - Run automated smoke tests against production API
-   - Validate critical user journeys and error handling
 
 ### Cost Estimation
 
@@ -416,76 +332,12 @@ Each deployment follows these steps:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   API Gateway   │───▶│  Lambda Functions │───▶│    DynamoDB     │
+│   API Gateway   │───▶│ Lambda Functions │───▶│    DynamoDB     │
 │                 │    │                  │    │                 │
 │ • REST API      │    │ • Create Todo    │    │ • todos table   │
 │ • CORS enabled  │    │ • Read Todos     │    │ • Pay-per-req   │
 │ • Regional      │    │ • Update Todo    │    │ • Encrypted     │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
-```
-
-### Deployment Architecture
-
-```
-┌─────────────┐    ┌─────────────────┐    ┌──────────────┐
-│  Developer  │───▶│ GitHub Actions  │───▶│ AWS Account  │
-│             │    │                 │    │              │
-│ • Push Code │    │ • Build & Test  │    │ • Lambda     │
-│ • Create PR │    │ • Terraform     │    │ • API GW     │
-│             │    │ • OIDC Auth     │    │ • DynamoDB   │
-└─────────────┘    └─────────────────┘    └──────────────┘
-```
-
-### Technology Stack
-
-| Layer              | Technology      | Purpose                               |
-| ------------------ | --------------- | ------------------------------------- |
-| **API**            | AWS API Gateway | HTTP endpoints, CORS, request routing |
-| **Compute**        | AWS Lambda      | Serverless function execution         |
-| **Database**       | AWS DynamoDB    | NoSQL document storage                |
-| **Language**       | TypeScript      | Type-safe development                 |
-| **Build**          | Webpack         | Lambda function bundling              |
-| **Testing**        | Jest            | Unit and integration testing          |
-| **Infrastructure** | Terraform       | Infrastructure as Code                |
-| **CI/CD**          | GitHub Actions  | Automated deployment                  |
-| **Local Dev**      | LocalStack      | Local AWS service emulation           |
-
-### Project Structure
-
-```
-├── .github/                    # GitHub Actions workflows and docs
-│   ├── workflows/
-│   │   ├── deploy.yml         # Main deployment workflow
-│   │   └── destroy.yml        # Infrastructure cleanup
-│   ├── DEPLOYMENT_SETUP.md    # AWS OIDC setup guide
-│   └── REMOTE_STATE_SETUP.md  # Terraform state setup
-├── src/                       # Source code
-│   ├── handlers/              # Lambda function handlers
-│   │   ├── create-todo.ts     # POST /todos
-│   │   ├── read-todos.ts      # GET /todos
-│   │   └── update-todo.ts     # PUT /todos/{id}/complete
-│   ├── lib/                   # Shared libraries
-│   │   ├── dynamodb.ts        # DynamoDB client wrapper
-│   │   ├── responses.ts       # API response utilities
-│   │   └── types.ts           # TypeScript type definitions
-│   └── utils/                 # Utility functions
-│       └── validation.ts      # Request validation
-├── terraform/                 # Infrastructure as Code
-│   ├── main.tf               # Main Terraform configuration
-│   ├── variables.tf          # Input variables
-│   ├── outputs.tf            # Output values
-│   ├── api-gateway.tf        # API Gateway resources
-│   ├── lambda.tf             # Lambda function resources
-│   ├── dynamodb.tf           # DynamoDB table
-│   └── iam.tf                # IAM roles and policies
-├── scripts/                   # Utility scripts
-│   ├── start-local.sh        # Start LocalStack
-│   ├── deploy-local.sh       # Deploy to LocalStack
-│   └── setup-remote-state.sh # Terraform state setup
-├── package.json              # Node.js dependencies and scripts
-├── tsconfig.json             # TypeScript configuration
-├── webpack.config.js         # Lambda bundling configuration
-└── docker-compose.yml        # LocalStack configuration
 ```
 
 ## 🧪 Development & Testing
@@ -527,32 +379,13 @@ Each deployment follows these steps:
    # Run integration tests (requires local environment)
    npm run test:integration
 
-   # Run smoke tests (requires deployed API)
-   npm run test:smoke
-
    # Generate coverage report
    npm run test:coverage
    ```
 
-4. **Smoke Tests**:
+4. **Build**:
 
    ```bash
-   # Run smoke tests against deployed API
-   ./scripts/run-smoke-tests.sh --environment production
-
-   # Or against a specific URL
-   ./scripts/run-smoke-tests.sh --url https://your-api-url.amazonaws.com/production
-
-   # Or using environment variable
-   API_BASE_URL="https://your-api-url.amazonaws.com/production" npm run test:smoke
-   ```
-
-5. **Code Quality**:
-
-   ```bash
-   # Lint code
-   npm run lint
-
    # Build for production
    npm run build
    ```
@@ -572,38 +405,6 @@ docker-compose logs localstack
 aws --endpoint-url=http://localhost:4566 dynamodb list-tables
 ```
 
-**Deployment Issues**:
-
-- Check GitHub Actions logs for detailed error messages
-- Verify AWS credentials and permissions
-- Ensure Terraform state is accessible
-- Validate IAM role trust relationships
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Ensure all tests pass: `npm test && npm run test:integration`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: Check the `.github/` directory for detailed setup guides
-- **Issues**: Open an issue on GitHub for bugs or feature requests
-- **Discussions**: Use GitHub Discussions for questions and community support
-
-## 🔗 Related Resources
-
-- [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
-- [AWS API Gateway Documentation](https://docs.aws.amazon.com/apigateway/)
-- [AWS DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
-- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [LocalStack Documentation](https://docs.localstack.cloud/)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)

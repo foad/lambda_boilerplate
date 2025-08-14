@@ -29,7 +29,7 @@ awslocal lambda delete-function --function-name update-todo --region eu-west-2 2
 # Create create-todo function
 awslocal lambda create-function \
     --function-name create-todo \
-    --runtime nodejs18.x \
+    --runtime nodejs22.x \
     --role arn:aws:iam::000000000000:role/lambda-execution-role \
     --handler index.handler \
     --zip-file fileb://dist/create-todo.zip \
@@ -39,7 +39,7 @@ awslocal lambda create-function \
 # Create read-todos function
 awslocal lambda create-function \
     --function-name read-todos \
-    --runtime nodejs18.x \
+    --runtime nodejs22.x \
     --role arn:aws:iam::000000000000:role/lambda-execution-role \
     --handler index.handler \
     --zip-file fileb://dist/read-todos.zip \
@@ -49,7 +49,7 @@ awslocal lambda create-function \
 # Create update-todo function
 awslocal lambda create-function \
     --function-name update-todo \
-    --runtime nodejs18.x \
+    --runtime nodejs22.x \
     --role arn:aws:iam::000000000000:role/lambda-execution-role \
     --handler index.handler \
     --zip-file fileb://dist/update-todo.zip \
