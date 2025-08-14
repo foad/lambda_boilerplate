@@ -64,3 +64,37 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_policy_attachment" {
   policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
   role       = aws_iam_role.lambda_execution_role.name
 }
+
+# Cognito access policy for Lambda functions (minimal permissions for JWT verification)
+resource "aws_iam_policy" "lambda_cognito_policy" {
+  name        = "${var.environment}-lambda-cognito-policy"
+  description = "IAM policy for Lambda functions to access Cognito for JWT verification"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:GetUser",
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:DescribeUserPoolClient"
+        ]
+        Resource = [
+          aws_cognito_user_pool.main.arn
+        ]
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-lambda-cognito-policy"
+    Type = "IAM-Policy"
+  })
+}
+
+# Attach Cognito policy to Lambda execution role
+resource "aws_iam_role_policy_attachment" "lambda_cognito_policy_attachment" {
+  policy_arn = aws_iam_policy.lambda_cognito_policy.arn
+  role       = aws_iam_role.lambda_execution_role.name
+}

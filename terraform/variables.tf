@@ -27,3 +27,9 @@ variable "enable_remote_state" {
   type        = bool
   default     = false
 }
+
+variable "enable_cognito_auth" {
+  description = "Enable Cognito authentication for API endpoints"
+  type        = bool
+  default     = true
+}

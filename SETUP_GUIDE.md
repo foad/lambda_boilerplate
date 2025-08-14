@@ -8,7 +8,7 @@ This boilerplate comes with a working todo API. Use these guides to:
 
 - **Customize Project Settings** - Update naming and configuration
 - **Add New Endpoints** - Extend your API with additional resources
-- **Integrate AWS Services** - Add services like SNS, Cognito, S3, etc.
+- **Integrate AWS Services** - Add services like SNS, S3, etc.
 
 ---
 
@@ -624,7 +624,7 @@ describe("create-user handler", () => {
 
 ## 🔗 Adding AWS Service Integration
 
-Let's add SNS (Simple Notification Service) integration as an example. This pattern works for other services like Cognito, SES, S3, etc.
+Let's add SNS (Simple Notification Service) integration as an example. This pattern works for other services like SES, S3, etc.
 
 ### Step 1: Install AWS SDK Dependencies
 
