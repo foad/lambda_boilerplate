@@ -23,7 +23,7 @@ resource "aws_lambda_function" "create_todo" {
   function_name = "${var.environment}-create-todo"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = "nodejs22.x"
   memory_size   = 256
   timeout       = 10
 
@@ -47,7 +47,7 @@ resource "aws_lambda_function" "read_todos" {
   function_name = "${var.environment}-read-todos"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = "nodejs22.x"
   memory_size   = 256
   timeout       = 10
 
@@ -71,7 +71,7 @@ resource "aws_lambda_function" "update_todo" {
   function_name = "${var.environment}-update-todo"
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "index.handler"
-  runtime       = "nodejs18.x"
+  runtime       = "nodejs22.x"
   memory_size   = 256
   timeout       = 10
 
