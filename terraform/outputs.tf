@@ -110,4 +110,14 @@ output "cognito_user_pool_endpoint" {
   value       = aws_cognito_user_pool.main.endpoint
 }
 
+output "cognito_auth_enabled" {
+  description = "Whether Cognito authentication is enabled"
+  value       = var.enable_cognito_auth
+}
+
+output "api_gateway_authorizer_id" {
+  description = "ID of the API Gateway Cognito authorizer (if enabled)"
+  value       = var.enable_cognito_auth ? aws_api_gateway_authorizer.cognito_authorizer[0].id : null
+}
+
 

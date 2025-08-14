@@ -13,6 +13,18 @@ resource "aws_api_gateway_rest_api" "todos_api" {
   })
 }
 
+# Cognito User Pool Authorizer
+resource "aws_api_gateway_authorizer" "cognito_authorizer" {
+  count = var.enable_cognito_auth ? 1 : 0
+
+  name                   = "${var.environment}-cognito-authorizer"
+  rest_api_id            = aws_api_gateway_rest_api.todos_api.id
+  type                   = "COGNITO_USER_POOLS"
+  provider_arns          = [aws_cognito_user_pool.main.arn]
+  identity_source        = "method.request.header.Authorization"
+  authorizer_credentials = null
+}
+
 # API Gateway Resource for /todos
 resource "aws_api_gateway_resource" "todos_resource" {
   rest_api_id = aws_api_gateway_rest_api.todos_api.id
@@ -39,7 +51,8 @@ resource "aws_api_gateway_method" "create_todo_method" {
   rest_api_id   = aws_api_gateway_rest_api.todos_api.id
   resource_id   = aws_api_gateway_resource.todos_resource.id
   http_method   = "POST"
-  authorization = "NONE"
+  authorization = var.enable_cognito_auth ? "COGNITO_USER_POOLS" : "NONE"
+  authorizer_id = var.enable_cognito_auth ? aws_api_gateway_authorizer.cognito_authorizer[0].id : null
 }
 
 # GET /todos - Read Todos
@@ -47,7 +60,8 @@ resource "aws_api_gateway_method" "read_todos_method" {
   rest_api_id   = aws_api_gateway_rest_api.todos_api.id
   resource_id   = aws_api_gateway_resource.todos_resource.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = var.enable_cognito_auth ? "COGNITO_USER_POOLS" : "NONE"
+  authorizer_id = var.enable_cognito_auth ? aws_api_gateway_authorizer.cognito_authorizer[0].id : null
 }
 
 # PUT /todos/{id}/complete - Update Todo
@@ -55,7 +69,8 @@ resource "aws_api_gateway_method" "update_todo_method" {
   rest_api_id   = aws_api_gateway_rest_api.todos_api.id
   resource_id   = aws_api_gateway_resource.todo_complete_resource.id
   http_method   = "PUT"
-  authorization = "NONE"
+  authorization = var.enable_cognito_auth ? "COGNITO_USER_POOLS" : "NONE"
+  authorizer_id = var.enable_cognito_auth ? aws_api_gateway_authorizer.cognito_authorizer[0].id : null
 }
 
 # Lambda Integration for Create Todo
@@ -198,7 +213,7 @@ resource "aws_api_gateway_integration_response" "todos_options_integration_respo
   status_code = aws_api_gateway_method_response.todos_options_response.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Headers" = var.enable_cognito_auth ? "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'" : "'Content-Type,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
@@ -212,7 +227,7 @@ resource "aws_api_gateway_integration_response" "todo_complete_options_integrati
   status_code = aws_api_gateway_method_response.todo_complete_options_response.status_code
 
   response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Headers" = var.enable_cognito_auth ? "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'" : "'Content-Type,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
     "method.response.header.Access-Control-Allow-Methods" = "'PUT,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
@@ -241,6 +256,7 @@ resource "aws_api_gateway_deployment" "todos_api_deployment" {
       aws_api_gateway_integration.create_todo_integration.id,
       aws_api_gateway_integration.read_todos_integration.id,
       aws_api_gateway_integration.update_todo_integration.id,
+      var.enable_cognito_auth ? aws_api_gateway_authorizer.cognito_authorizer[0].id : "",
     ]))
   }
 
