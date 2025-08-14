@@ -4,6 +4,8 @@
 
 A boilerplate repository that can be cloned and modified to quickly spin up nearly-free APIs using AWS Lambda.
 
+Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this repo to spin up an API.
+
 ## 🚀 Features
 
 - **Serverless Architecture**: Built with AWS Lambda, DynamoDB, and API Gateway

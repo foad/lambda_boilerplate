@@ -20,7 +20,7 @@ When you first clone this boilerplate, follow this checklist to customize it for
 
 **`package.json`** - Update project information:
 
-```json
+```jsonc
 {
   "name": "your-project-name", // Change from "lambda_boilerplate"
   "description": "Your project description", // Update description
@@ -35,7 +35,7 @@ When you first clone this boilerplate, follow this checklist to customize it for
 
 **`terraform/main.tf`** - Update resource tags:
 
-```hcl
+```terraform
 locals {
   common_tags = {
     Application = "your-application-name"     // Change from "lambda_boilerplate"
@@ -86,7 +86,7 @@ locals {
 
 **`terraform/variables.tf`** - Update default values:
 
-```hcl
+```terraform
 variable "owner" {
   description = "Owner of the resources"
   type        = string
@@ -105,7 +105,7 @@ variable "project_name" {
 
 **API Gateway naming** - If you want to rename the API:
 
-```hcl
+```terraform
 # In terraform/api-gateway.tf
 resource "aws_api_gateway_rest_api" "todos_api" {
   name        = "${var.environment}-your-api-name"    // Update this
@@ -344,7 +344,7 @@ module.exports = {
 
 **`terraform/dynamodb.tf`** - Add new table:
 
-```hcl
+```terraform
 # Add alongside existing todos table
 resource "aws_dynamodb_table" "users" {
   name           = "${var.environment}-users"
@@ -382,7 +382,7 @@ resource "aws_dynamodb_table" "users" {
 
 **`terraform/lambda.tf`** - Add new Lambda function:
 
-```hcl
+```terraform
 # Add alongside existing Lambda functions
 data "archive_file" "create_user_zip" {
   type        = "zip"
@@ -428,7 +428,7 @@ resource "aws_cloudwatch_log_group" "create_user_logs" {
 
 **`terraform/api-gateway.tf`** - Add new API resources:
 
-```hcl
+```terraform
 # Add alongside existing todos resources
 resource "aws_api_gateway_resource" "users_resource" {
   rest_api_id = aws_api_gateway_rest_api.todos_api.id
@@ -511,7 +511,7 @@ resource "aws_api_gateway_integration_response" "users_options_integration_respo
 
 **`terraform/iam.tf`** - Add permissions for new table:
 
-```hcl
+```terraform
 # Update the existing DynamoDB policy to include new table
 resource "aws_iam_policy" "lambda_dynamodb_policy" {
   name        = "${var.environment}-lambda-dynamodb-policy"
@@ -630,7 +630,7 @@ Let's add SNS (Simple Notification Service) integration as an example. This patt
 
 **`package.json`** - Add SNS client:
 
-```json
+```jsonc
 {
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.450.0",
@@ -684,7 +684,7 @@ export async function publishNotification(
 
 **`terraform/sns.tf`** - New file for SNS resources:
 
-```hcl
+```terraform
 # SNS Topic for notifications
 resource "aws_sns_topic" "notifications" {
   name = "${var.environment}-notifications"
@@ -712,7 +712,7 @@ output "sns_topic_arn" {
 
 **`terraform/variables.tf`** - Add SNS variable:
 
-```hcl
+```terraform
 variable "notification_email" {
   description = "Email address for SNS notifications (optional)"
   type        = string
@@ -724,7 +724,7 @@ variable "notification_email" {
 
 **`terraform/iam.tf`** - Add SNS permissions:
 
-```hcl
+```terraform
 # Create separate SNS policy
 resource "aws_iam_policy" "lambda_sns_policy" {
   name        = "${var.environment}-lambda-sns-policy"
@@ -762,7 +762,7 @@ resource "aws_iam_role_policy_attachment" "lambda_sns_policy_attachment" {
 
 **`terraform/lambda.tf`** - Add SNS topic ARN to environment variables:
 
-```hcl
+```terraform
 # Update existing Lambda functions to include SNS topic ARN
 resource "aws_lambda_function" "create_todo" {
   # ... existing configuration ...
