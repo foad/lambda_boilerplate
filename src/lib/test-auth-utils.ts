@@ -216,13 +216,13 @@ export class TestAuthManager {
  */
 export const DEFAULT_TEST_USERS: TestUser[] = [
   {
-    username: "testuser@example.com",
-    email: "testuser@example.com",
+    username: "smoketest1",
+    email: "smoketest1@example.com",
     password: "TestPass123!",
   },
   {
-    username: "testuser2@example.com",
-    email: "testuser2@example.com",
+    username: "smoketest2",
+    email: "smoketest2@example.com",
     password: "TestPass123!",
   },
 ];
