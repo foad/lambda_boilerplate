@@ -103,7 +103,9 @@
         "cognito-idp:TagResource",
         "cognito-idp:UntagResource",
         "cognito-idp:ListTagsForResource",
-        "cognito-idp:GetUserPoolMfaConfig"
+        "cognito-idp:GetUserPoolMfaConfig",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:AdminDeleteUser"
       ],
       "Resource": "*"
     },
