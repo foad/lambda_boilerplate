@@ -34,7 +34,6 @@ resource "aws_lambda_function" "create_todo" {
       TODOS_TABLE_NAME     = aws_dynamodb_table.todos.name
       COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
       COGNITO_CLIENT_ID    = aws_cognito_user_pool_client.main.id
-      ENABLE_COGNITO_AUTH  = var.enable_cognito_auth
     }
   }
 
@@ -61,7 +60,6 @@ resource "aws_lambda_function" "read_todos" {
       TODOS_TABLE_NAME     = aws_dynamodb_table.todos.name
       COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
       COGNITO_CLIENT_ID    = aws_cognito_user_pool_client.main.id
-      ENABLE_COGNITO_AUTH  = var.enable_cognito_auth
     }
   }
 
@@ -88,7 +86,6 @@ resource "aws_lambda_function" "update_todo" {
       TODOS_TABLE_NAME     = aws_dynamodb_table.todos.name
       COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
       COGNITO_CLIENT_ID    = aws_cognito_user_pool_client.main.id
-      ENABLE_COGNITO_AUTH  = var.enable_cognito_auth
     }
   }
 

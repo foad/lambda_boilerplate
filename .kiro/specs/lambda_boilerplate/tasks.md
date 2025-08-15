@@ -157,7 +157,10 @@
   - Update integration tests to handle authentication (mock authorizer context)
   - Update smoke tests to authenticate before making API calls
   - Create test user management utilities for testing
-  - _Requirements: Maintainable development and testing workflow_
+  - Remove enable_cognito_auth conditional logic - auth should always be enabled
+  - Update Terraform configuration to always enable Cognito authentication
+  - Handle LocalStack limitations (no Cognito in free tier) while keeping auth always enabled
+  - _Requirements: Maintainable development and testing workflow with always-enabled authentication_
 
 - [ ] 20 Update documentation and cost estimation
 

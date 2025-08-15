@@ -22,7 +22,6 @@ interface ApiResponse<T> {
 
 describe("Smoke Tests - Deployed API", () => {
   const API_URL = process.env.API_BASE_URL;
-  const ENABLE_COGNITO_AUTH = process.env.ENABLE_COGNITO_AUTH === "true";
   let authManager: TestAuthManager;
   let authHeaders: Record<string, string> = {};
 
@@ -34,36 +33,32 @@ describe("Smoke Tests - Deployed API", () => {
     }
     console.log(`Running smoke tests against: ${API_URL}`);
 
-    // Setup authentication if enabled
-    if (ENABLE_COGNITO_AUTH) {
-      console.log("Setting up authentication for smoke tests...");
+    // Setup authentication
+    console.log("Setting up authentication for smoke tests...");
 
-      // For smoke tests against deployed API, we need to use the deployed Cognito
-      // The user pool and client should already exist from deployment
-      authManager = new TestAuthManager(
-        process.env.COGNITO_USER_POOL_ID,
-        process.env.COGNITO_CLIENT_ID
-      );
+    // For smoke tests against deployed API, we need to use the deployed Cognito
+    // The user pool and client should already exist from deployment
+    authManager = new TestAuthManager(
+      process.env.COGNITO_USER_POOL_ID,
+      process.env.COGNITO_CLIENT_ID
+    );
 
-      // Create test users in the deployed environment
-      await setupTestUsers(authManager);
+    // Create test users in the deployed environment
+    await setupTestUsers(authManager);
 
-      // Authenticate the first test user
-      const testUser = DEFAULT_TEST_USERS[0];
-      const tokens = await authManager.authenticateUser(
-        testUser.username,
-        testUser.password
-      );
-      authHeaders = authManager.getAuthHeaders(tokens.idToken);
-      console.log("Authentication setup complete for smoke tests");
-    } else {
-      console.log("Running smoke tests without authentication");
-    }
+    // Authenticate the first test user
+    const testUser = DEFAULT_TEST_USERS[0];
+    const tokens = await authManager.authenticateUser(
+      testUser.username,
+      testUser.password
+    );
+    authHeaders = authManager.getAuthHeaders(tokens.idToken);
+    console.log("Authentication setup complete for smoke tests");
   });
 
   afterAll(async () => {
-    // Cleanup test users if authentication was enabled
-    if (ENABLE_COGNITO_AUTH && authManager) {
+    // Cleanup test users
+    if (authManager) {
       console.log("Cleaning up smoke test users...");
       await cleanupTestUsers(authManager);
     }

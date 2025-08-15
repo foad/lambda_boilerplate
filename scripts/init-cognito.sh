@@ -100,7 +100,6 @@ echo ""
 echo "=== Local Development Environment Variables ==="
 echo "export COGNITO_USER_POOL_ID=$USER_POOL_ID"
 echo "export COGNITO_CLIENT_ID=$CLIENT_ID"
-echo "export ENABLE_COGNITO_AUTH=true"
 echo ""
 echo "Add these to your .env.local file or export them in your shell"
 
@@ -108,7 +107,6 @@ echo "Add these to your .env.local file or export them in your shell"
 cat > .env.cognito.local << EOF
 COGNITO_USER_POOL_ID=$USER_POOL_ID
 COGNITO_CLIENT_ID=$CLIENT_ID
-ENABLE_COGNITO_AUTH=true
 EOF
 
 echo "Environment variables saved to .env.cognito.local"
