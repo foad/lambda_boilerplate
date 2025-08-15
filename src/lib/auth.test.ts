@@ -1,9 +1,6 @@
-/**
- * Unit tests for authentication utilities
- */
-
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { extractUserContext, getUserId, isAuthError } from "./auth";
+import { AuthError, extractUserContext, getUserId, isAuthError } from "./auth";
+import { createMockEventWithClaims } from "./test-event-utils";
 
 describe("Authentication Utilities", () => {
   describe("extractUserContext", () => {
@@ -30,17 +27,17 @@ describe("Authentication Utilities", () => {
       }
     });
 
-    it("should handle missing authorizer context (authentication disabled)", () => {
+    it("should handle missing authorizer context", () => {
       const event = {
         requestContext: {},
       } as any as APIGatewayProxyEvent;
 
       const result = extractUserContext(event);
 
-      expect(isAuthError(result)).toBe(false);
-      if (!isAuthError(result)) {
-        expect(result.userId).toBe("anonymous");
-        expect(result.username).toBe("anonymous");
+      expect(isAuthError(result)).toBe(true);
+      if (isAuthError(result)) {
+        expect(result.code).toBe("MISSING_AUTHORIZER");
+        expect(result.message).toBe("No authorizer context found in request");
       }
     });
 
@@ -123,31 +120,13 @@ describe("Authentication Utilities", () => {
     });
 
     it("should return error when extraction fails", () => {
-      const event = {
-        requestContext: {
-          authorizer: {
-            claims: {},
-          },
-        },
-      } as any as APIGatewayProxyEvent;
+      const event = createMockEventWithClaims({});
 
+      const context = extractUserContext(event);
       const result = getUserId(event);
 
-      expect(isAuthError(result)).toBe(true);
-      if (isAuthError(result)) {
-        expect(result.code).toBe("MISSING_USER_ID");
-      }
-    });
-
-    it("should return anonymous user ID when authentication is disabled", () => {
-      const event = {
-        requestContext: {},
-      } as any as APIGatewayProxyEvent;
-
-      const result = getUserId(event);
-
-      expect(typeof result).toBe("string");
-      expect(result).toBe("anonymous");
+      expect(isAuthError(context)).toBe(true);
+      expect((result as AuthError).code).toBe("MISSING_USER_ID");
     });
   });
 

@@ -4,6 +4,8 @@ import {
   DeleteItemCommand,
 } from "@aws-sdk/client-dynamodb";
 
+export * from "./test-auth-utils";
+
 const getTestClient = (): DynamoDBClient =>
   new DynamoDBClient({
     endpoint: "http://localhost:4566",

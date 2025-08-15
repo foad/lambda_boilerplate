@@ -27,11 +27,9 @@ export function extractUserContext(
     const authContext = event.requestContext.authorizer;
 
     if (!authContext) {
-      // If no authorizer context, authentication might be disabled
-      // For backward compatibility, we'll use a default user
       return {
-        userId: "anonymous",
-        username: "anonymous",
+        message: "No authorizer context found in request",
+        code: "MISSING_AUTHORIZER",
       };
     }
 

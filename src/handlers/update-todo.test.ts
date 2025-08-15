@@ -1,8 +1,3 @@
-/**
- * Unit tests for Update Todo Lambda function
- */
-
-import { APIGatewayProxyEvent } from "aws-lambda";
 import { mockClient } from "aws-sdk-client-mock";
 import {
   DynamoDBDocumentClient,
@@ -11,6 +6,11 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { handler } from "./update-todo";
 import { Todo } from "../lib/types";
+import {
+  createMockUpdateTodoEvent,
+  createMockEventWithEmptyAuth,
+  createMockEventWithClaims,
+} from "../lib/test-event-utils";
 
 // Mock the DynamoDB client
 const dynamoMock = mockClient(DynamoDBDocumentClient);
@@ -31,53 +31,6 @@ afterEach(() => {
   process.env = originalEnv;
 });
 
-// Helper function to create mock API Gateway event
-function createMockEvent(
-  todoId: string | null,
-  userId: string = "test-user-123"
-): APIGatewayProxyEvent {
-  return {
-    body: null,
-    headers: {},
-    multiValueHeaders: {},
-    httpMethod: "PUT",
-    isBase64Encoded: false,
-    path: `/todos/${todoId}/complete`,
-    pathParameters: todoId !== null ? { id: todoId } : null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {
-      authorizer: {
-        claims: {
-          sub: userId,
-          email: "test@example.com",
-          "cognito:username": "testuser",
-        },
-      },
-    } as any,
-    resource: "",
-  };
-}
-
-// Helper function to create mock event without authentication
-function createMockEventNoAuth(todoId: string | null): APIGatewayProxyEvent {
-  return {
-    body: null,
-    headers: {},
-    multiValueHeaders: {},
-    httpMethod: "PUT",
-    isBase64Encoded: false,
-    path: `/todos/${todoId}/complete`,
-    pathParameters: todoId !== null ? { id: todoId } : null,
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    stageVariables: null,
-    requestContext: {} as any,
-    resource: "",
-  };
-}
-
 // Sample todo for testing
 const sampleTodo: Todo = {
   id: "123e4567-e89b-42d3-a456-426614174000",
@@ -92,12 +45,11 @@ describe("Update Todo Handler", () => {
   describe("Authentication Error Cases", () => {
     test("should return 400 when user claims are missing", async () => {
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = {
-        ...createMockEvent(todoId),
-        requestContext: {
-          authorizer: {},
-        } as any,
-      };
+      const event = createMockEventWithEmptyAuth({
+        httpMethod: "PUT",
+        path: `/todos/${todoId}/complete`,
+        pathParameters: { id: todoId },
+      });
 
       const result = await handler(event);
 
@@ -109,16 +61,16 @@ describe("Update Todo Handler", () => {
 
     test("should return 400 when user ID is missing from claims", async () => {
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = {
-        ...createMockEvent(todoId),
-        requestContext: {
-          authorizer: {
-            claims: {
-              email: "test@example.com",
-            },
-          },
-        } as unknown,
-      };
+      const event = createMockEventWithClaims(
+        {
+          email: "test@example.com",
+        },
+        {
+          httpMethod: "PUT",
+          path: `/todos/${todoId}/complete`,
+          pathParameters: { id: todoId },
+        }
+      );
 
       const result = await handler(event);
 
@@ -127,42 +79,12 @@ describe("Update Todo Handler", () => {
       expect(responseBody.error.code).toBe("VALIDATION_ERROR");
       expect(responseBody.error.message).toBe("Authentication failed");
     });
-
-    test("should work with anonymous user when authentication is disabled", async () => {
-      const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEventNoAuth(todoId);
-
-      const anonymousTodo: Todo = {
-        ...sampleTodo,
-        userId: "anonymous",
-      };
-
-      const updatedTodo: Todo = {
-        ...anonymousTodo,
-        status: "completed",
-        updatedAt: "2023-01-01T01:00:00.000Z",
-      };
-
-      dynamoMock.on(GetCommand).resolves({
-        Item: anonymousTodo,
-      });
-
-      dynamoMock.on(UpdateCommand).resolves({
-        Attributes: updatedTodo,
-      });
-
-      const result = await handler(event);
-
-      expect(result.statusCode).toBe(200);
-      const responseBody = JSON.parse(result.body);
-      expect(responseBody.data.userId).toBe("anonymous");
-    });
   });
 
   describe("User Ownership Cases", () => {
     test("should return 404 when todo belongs to different user", async () => {
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId, "user-1");
+      const event = createMockUpdateTodoEvent(todoId, "user-1");
 
       const otherUserTodo: Todo = {
         ...sampleTodo,
@@ -186,7 +108,7 @@ describe("Update Todo Handler", () => {
 
     test("should return 404 when conditional check fails on update", async () => {
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       dynamoMock.on(GetCommand).resolves({
         Item: sampleTodo,
@@ -208,7 +130,7 @@ describe("Update Todo Handler", () => {
     test("should update todo status to completed successfully", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       const updatedTodo: Todo = {
         ...sampleTodo,
@@ -265,7 +187,7 @@ describe("Update Todo Handler", () => {
   describe("Validation Error Cases", () => {
     test("should return 400 when todo ID is missing", async () => {
       // Arrange
-      const event = createMockEvent(null);
+      const event = createMockUpdateTodoEvent(null);
 
       // Act
       const result = await handler(event);
@@ -283,7 +205,7 @@ describe("Update Todo Handler", () => {
 
     test("should return 400 when todo ID is empty string", async () => {
       // Arrange
-      const event = createMockEvent("");
+      const event = createMockUpdateTodoEvent("");
 
       // Act
       const result = await handler(event);
@@ -301,7 +223,7 @@ describe("Update Todo Handler", () => {
 
     test("should return 400 when todo ID is whitespace only", async () => {
       // Arrange
-      const event = createMockEvent("   ");
+      const event = createMockUpdateTodoEvent("   ");
 
       // Act
       const result = await handler(event);
@@ -320,7 +242,7 @@ describe("Update Todo Handler", () => {
     test("should accept any non-empty string as valid ID", async () => {
       // Arrange
       const todoId = "simple-id";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       const updatedTodo: Todo = {
         ...sampleTodo,
@@ -352,7 +274,7 @@ describe("Update Todo Handler", () => {
     test("should return 404 when todo does not exist", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       dynamoMock.on(GetCommand).resolves({
         Item: undefined,
@@ -378,7 +300,7 @@ describe("Update Todo Handler", () => {
     test("should return 500 when GetCommand fails", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       dynamoMock.on(GetCommand).rejects(new Error("DynamoDB error"));
 
@@ -396,7 +318,7 @@ describe("Update Todo Handler", () => {
     test("should return 500 when UpdateCommand fails", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       dynamoMock.on(GetCommand).resolves({
         Item: sampleTodo,
@@ -419,7 +341,7 @@ describe("Update Todo Handler", () => {
       // Arrange
       delete process.env.TODOS_TABLE_NAME;
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       // Act
       const result = await handler(event);
@@ -437,7 +359,7 @@ describe("Update Todo Handler", () => {
     test("should include proper CORS headers", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       const updatedTodo: Todo = {
         ...sampleTodo,
@@ -469,7 +391,7 @@ describe("Update Todo Handler", () => {
     test("should return updated todo with all required fields", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       const updatedTodo: Todo = {
         ...sampleTodo,
@@ -505,7 +427,7 @@ describe("Update Todo Handler", () => {
     test("should handle already completed todo", async () => {
       // Arrange
       const todoId = "123e4567-e89b-42d3-a456-426614174000";
-      const event = createMockEvent(todoId);
+      const event = createMockUpdateTodoEvent(todoId);
 
       const alreadyCompletedTodo: Todo = {
         ...sampleTodo,

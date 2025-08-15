@@ -12,7 +12,7 @@ import {
   createInternalErrorResponse,
 } from "../lib/responses";
 import { Todo } from "../lib/types";
-import { getUserId, isAuthError } from "../lib/auth";
+import { getUserId } from "../lib/auth";
 
 /**
  * Lambda handler for retrieving all todo items

@@ -1,12 +1,12 @@
-/**
- * Unit tests for read-todos Lambda function handler
- */
-
-import { APIGatewayProxyEvent } from "aws-lambda";
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { handler } from "./read-todos";
 import { Todo } from "../lib/types";
+import {
+  createMockReadTodosEvent,
+  createMockEventWithEmptyAuth,
+  createMockEventWithClaims,
+} from "../lib/test-event-utils";
 
 // Mock the DynamoDB client
 const dynamoMock = mockClient(DynamoDBDocumentClient);
@@ -27,57 +27,13 @@ afterEach(() => {
   process.env = originalEnv;
 });
 
-// Helper function to create mock API Gateway event
-const createMockEvent = (
-  userId: string = "test-user-123"
-): APIGatewayProxyEvent => ({
-  httpMethod: "GET",
-  path: "/todos",
-  pathParameters: null,
-  queryStringParameters: null,
-  headers: {},
-  multiValueHeaders: {},
-  body: null,
-  isBase64Encoded: false,
-  requestContext: {
-    authorizer: {
-      claims: {
-        sub: userId,
-        email: "test@example.com",
-        "cognito:username": "testuser",
-      },
-    },
-  } as any,
-  resource: "",
-  stageVariables: null,
-  multiValueQueryStringParameters: null,
-});
-
-// Helper function to create mock event without authentication
-const createMockEventNoAuth = (): APIGatewayProxyEvent => ({
-  httpMethod: "GET",
-  path: "/todos",
-  pathParameters: null,
-  queryStringParameters: null,
-  headers: {},
-  multiValueHeaders: {},
-  body: null,
-  isBase64Encoded: false,
-  requestContext: {} as any,
-  resource: "",
-  stageVariables: null,
-  multiValueQueryStringParameters: null,
-});
-
 describe("read-todos handler", () => {
   describe("Authentication Error Cases", () => {
     it("should return 400 when user claims are missing", async () => {
-      const event = {
-        ...createMockEvent(),
-        requestContext: {
-          authorizer: {},
-        } as any,
-      };
+      const event = createMockEventWithEmptyAuth({
+        httpMethod: "GET",
+        path: "/todos",
+      });
 
       const result = await handler(event);
 
@@ -88,16 +44,15 @@ describe("read-todos handler", () => {
     });
 
     it("should return 400 when user ID is missing from claims", async () => {
-      const event = {
-        ...createMockEvent(),
-        requestContext: {
-          authorizer: {
-            claims: {
-              email: "test@example.com",
-            },
-          },
-        } as any,
-      };
+      const event = createMockEventWithClaims(
+        {
+          email: "test@example.com",
+        },
+        {
+          httpMethod: "GET",
+          path: "/todos",
+        }
+      );
 
       const result = await handler(event);
 
@@ -115,7 +70,7 @@ describe("read-todos handler", () => {
       ScannedCount: 0,
     });
 
-    const event = createMockEvent();
+    const event = createMockReadTodosEvent();
     const result = await handler(event);
 
     expect(result.statusCode).toBe(200);
@@ -153,7 +108,7 @@ describe("read-todos handler", () => {
       ScannedCount: 2,
     });
 
-    const event = createMockEvent();
+    const event = createMockReadTodosEvent();
     const result = await handler(event);
 
     expect(result.statusCode).toBe(200);
@@ -170,7 +125,7 @@ describe("read-todos handler", () => {
     mockError.name = "ServiceException";
     dynamoMock.on(ScanCommand).rejects(mockError);
 
-    const event = createMockEvent();
+    const event = createMockReadTodosEvent();
     const result = await handler(event);
 
     expect(result.statusCode).toBe(500);
@@ -192,7 +147,7 @@ describe("read-todos handler", () => {
       ScannedCount: 0,
     });
 
-    const event = createMockEvent();
+    const event = createMockReadTodosEvent();
     const result = await handler(event);
 
     expect(result.statusCode).toBe(200);
@@ -207,7 +162,7 @@ describe("read-todos handler", () => {
       ScannedCount: 0,
     });
 
-    const event = createMockEvent("test-user-123");
+    const event = createMockReadTodosEvent("test-user-123");
     await handler(event);
 
     // Verify that ScanCommand was called with correct table name and user filter
@@ -222,31 +177,11 @@ describe("read-todos handler", () => {
     });
   });
 
-  it("should work with anonymous user when authentication is disabled", async () => {
-    dynamoMock.on(ScanCommand).resolves({
-      Items: [],
-      Count: 0,
-      ScannedCount: 0,
-    });
-
-    const event = createMockEventNoAuth();
-    const result = await handler(event);
-
-    expect(result.statusCode).toBe(200);
-
-    // Verify that ScanCommand was called with anonymous user filter
-    expect(dynamoMock.commandCalls(ScanCommand)).toHaveLength(1);
-    const scanCall = dynamoMock.commandCalls(ScanCommand)[0];
-    expect(scanCall.args[0].input.ExpressionAttributeValues[":userId"]).toBe(
-      "anonymous"
-    );
-  });
-
   it("should handle missing TODOS_TABLE_NAME environment variable", async () => {
     // Remove the environment variable
     delete process.env.TODOS_TABLE_NAME;
 
-    const event = createMockEvent();
+    const event = createMockReadTodosEvent();
     const result = await handler(event);
 
     expect(result.statusCode).toBe(500);

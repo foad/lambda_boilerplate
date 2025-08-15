@@ -17,7 +17,7 @@ import {
   parseRequestBody,
 } from "../utils/validation";
 import { Todo, CreateTodoRequest } from "../lib/types";
-import { getUserId, isAuthError } from "../lib/auth";
+import { getUserId } from "../lib/auth";
 
 /**
  * Lambda handler for creating a new todo item

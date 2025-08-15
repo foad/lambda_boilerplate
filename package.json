@@ -8,7 +8,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:integration": "jest --testPathPattern=\\.integration\\.test\\.ts --testPathIgnorePatterns=''",
+    "test:integration": "npm run stop-local && npm run local:setup && jest --testPathPattern=\\.integration\\.test\\.ts --testPathIgnorePatterns=''",
     "test:smoke": "jest --testPathIgnorePatterns='/node_modules/' --testPathPattern='smoke-tests' --testTimeout=60000",
     "test:all": "jest --testPathIgnorePatterns=''",
     "lint": "eslint src/**/*.ts",
@@ -29,6 +29,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.865.0",
     "@aws-sdk/client-dynamodb": "^3.450.0",
     "@aws-sdk/lib-dynamodb": "^3.450.0",
     "uuid": "^9.0.1"

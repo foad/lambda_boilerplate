@@ -14,7 +14,7 @@ import {
 } from "../lib/responses";
 import { validateTodoId } from "../utils/validation";
 import { Todo } from "../lib/types";
-import { getUserId, isAuthError } from "../lib/auth";
+import { getUserId } from "../lib/auth";
 
 /**
  * Lambda handler for updating a todo item to completed status
