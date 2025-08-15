@@ -4,6 +4,7 @@
 
 export interface Todo {
   id: string;
+  userId: string;
   title: string;
   status: "pending" | "completed";
   createdAt: string;
@@ -28,7 +29,7 @@ export interface ErrorResponse {
   error: {
     message: string;
     code: string;
-    details?: any;
+    details?: unknown;
   };
 }
 

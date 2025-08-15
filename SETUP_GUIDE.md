@@ -4,11 +4,12 @@ This guide shows you how to extend this Lambda boilerplate by adding new API end
 
 ## 🚀 Quick Start
 
-This boilerplate comes with a working todo API. Use these guides to:
+This boilerplate comes with a working authenticated todo API. Use these guides to:
 
 - **Customize Project Settings** - Update naming and configuration
+- **Configure Authentication** - Set up Cognito User Pool for your project
 - **Add New Endpoints** - Extend your API with additional resources
-- **Integrate AWS Services** - Add services like SNS, Cognito, S3, etc.
+- **Integrate AWS Services** - Add services like SNS, S3, etc.
 
 ---
 
@@ -206,7 +207,78 @@ After making changes, verify:
 
 4. **Test deployment** by pushing to `develop` branch
 
-### Step 9: Clean Up Todo References
+### Step 9: Configure Authentication
+
+The boilerplate includes AWS Cognito User Pool authentication. Here's how to customize it:
+
+**`terraform/cognito.tf`** - Update Cognito configuration:
+
+```terraform
+# Update user pool name and settings
+resource "aws_cognito_user_pool" "user_pool" {
+  name = "${var.environment}-your-app-users"  // Change from "lambda-boilerplate-users"
+
+  # Customize password policy if needed
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = false
+    require_uppercase = true
+  }
+
+  # Customize user attributes
+  schema {
+    attribute_data_type = "String"
+    name               = "email"
+    required           = true
+    mutable            = true
+  }
+
+  # Add custom attributes if needed
+  schema {
+    attribute_data_type = "String"
+    name               = "company"
+    required           = false
+    mutable            = true
+  }
+}
+
+resource "aws_cognito_user_pool_client" "user_pool_client" {
+  name         = "${var.environment}-your-app-client"  // Update client name
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+
+  # Customize authentication flows
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH"  // Add if you want SRP authentication
+  ]
+}
+```
+
+**Creating Test Users:**
+
+After deployment, create test users for development:
+
+```bash
+# Create a test user
+aws cognito-idp admin-create-user \
+  --user-pool-id <your-user-pool-id> \
+  --username testuser \
+  --user-attributes Name=email,Value=test@example.com \
+  --temporary-password TempPass123! \
+  --message-action SUPPRESS
+
+# Set permanent password
+aws cognito-idp admin-set-user-password \
+  --user-pool-id <your-user-pool-id> \
+  --username testuser \
+  --password YourPassword123! \
+  --permanent
+```
+
+### Step 10: Clean Up Todo References
 
 If you want to remove the example todo functionality entirely:
 
@@ -234,6 +306,45 @@ If you want to remove the example todo functionality entirely:
 - `webpack.config.js` - Remove todo entry points, add your own
 - `terraform/dynamodb.tf` - Replace todos table with your tables
 - `scripts/deploy-local.sh` - Replace todo functions with your functions
+
+---
+
+## 🔐 Authentication Setup Guide
+
+This boilerplate uses AWS Cognito User Pool for authentication. All API endpoints require a valid JWT token.
+
+### Understanding the Authentication Flow
+
+1. **User Registration/Login** → Cognito User Pool
+2. **Receive JWT Token** → Include in API requests
+3. **API Gateway** → Validates token with Cognito
+4. **Lambda Functions** → Extract user context from validated token
+
+### Local Development with Authentication
+
+For local development, the boilerplate includes test utilities:
+
+```typescript
+// src/lib/test-auth-utils.ts provides utilities for testing
+import { createMockAuthContext } from "../lib/test-auth-utils";
+
+// In your tests
+const mockEvent = {
+  ...baseEvent,
+  requestContext: {
+    ...baseEvent.requestContext,
+    authorizer: createMockAuthContext("test-user-id"),
+  },
+};
+```
+
+### LocalStack Limitations:
+
+LocalStack's free tier doesn't include Cognito, so local development uses mock authentication:
+
+- API Gateway authorizer is disabled in local environment
+- Lambda functions receive mock user context
+- Integration tests use test utilities to simulate authentication
 
 ---
 
@@ -278,14 +389,22 @@ import {
   createSuccessResponse,
   createValidationErrorResponse,
   createInternalErrorResponse,
+  createUnauthorizedResponse,
 } from "../lib/responses";
 import { parseRequestBody } from "../utils/validation";
+import { getUserFromEvent } from "../lib/auth";
 import { User, CreateUserRequest } from "../lib/types";
 
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    // Extract authenticated user context
+    const userContext = getUserFromEvent(event);
+    if (!userContext) {
+      return createUnauthorizedResponse("Authentication required");
+    }
+
     const requestBody = parseRequestBody<CreateUserRequest>(event.body);
     if (!requestBody) {
       return createValidationErrorResponse("Request body is required");
@@ -301,6 +420,7 @@ export const handler = async (
       id: uuidv4(),
       email: requestBody.email.trim(),
       name: requestBody.name.trim(),
+      userId: userContext.userId, // Associate with authenticated user
       createdAt: now,
       updatedAt: now,
     };
@@ -440,7 +560,8 @@ resource "aws_api_gateway_method" "create_user_method" {
   rest_api_id   = aws_api_gateway_rest_api.todos_api.id
   resource_id   = aws_api_gateway_resource.users_resource.id
   http_method   = "POST"
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito_authorizer.id
 }
 
 resource "aws_api_gateway_integration" "create_user_integration" {
@@ -581,6 +702,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { handler } from "./create-user";
+import { createMockAuthContext } from "../lib/test-auth-utils";
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -598,6 +720,9 @@ describe("create-user handler", () => {
         email: "test@example.com",
         name: "Test User",
       }),
+      requestContext: {
+        authorizer: createMockAuthContext("test-user-123"),
+      },
     } as APIGatewayProxyEvent;
 
     const result = await handler(event);
@@ -606,11 +731,29 @@ describe("create-user handler", () => {
     const body = JSON.parse(result.body);
     expect(body.data.email).toBe("test@example.com");
     expect(body.data.name).toBe("Test User");
+    expect(body.data.userId).toBe("test-user-123");
+  });
+
+  it("should return 401 for missing authentication", async () => {
+    const event = {
+      body: JSON.stringify({
+        email: "test@example.com",
+        name: "Test User",
+      }),
+      requestContext: {}, // No authorizer context
+    } as APIGatewayProxyEvent;
+
+    const result = await handler(event);
+
+    expect(result.statusCode).toBe(401);
   });
 
   it("should return 400 for missing email", async () => {
     const event = {
       body: JSON.stringify({ name: "Test User" }),
+      requestContext: {
+        authorizer: createMockAuthContext("test-user-123"),
+      },
     } as APIGatewayProxyEvent;
 
     const result = await handler(event);
@@ -624,7 +767,7 @@ describe("create-user handler", () => {
 
 ## 🔗 Adding AWS Service Integration
 
-Let's add SNS (Simple Notification Service) integration as an example. This pattern works for other services like Cognito, SES, S3, etc.
+Let's add SNS (Simple Notification Service) integration as an example. This pattern works for other services like SES, S3, etc.
 
 ### Step 1: Install AWS SDK Dependencies
 

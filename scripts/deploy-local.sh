@@ -34,7 +34,8 @@ awslocal lambda create-function \
     --handler index.handler \
     --zip-file fileb://dist/create-todo.zip \
     --environment Variables="{TODOS_TABLE_NAME=todos,AWS_REGION=eu-west-2}" \
-    --region eu-west-2
+    --region eu-west-2 \
+    --no-cli-pager
 
 # Create read-todos function
 awslocal lambda create-function \
@@ -44,7 +45,8 @@ awslocal lambda create-function \
     --handler index.handler \
     --zip-file fileb://dist/read-todos.zip \
     --environment Variables="{TODOS_TABLE_NAME=todos,AWS_REGION=eu-west-2}" \
-    --region eu-west-2
+    --region eu-west-2 \
+    --no-cli-pager
 
 # Create update-todo function
 awslocal lambda create-function \
@@ -54,7 +56,8 @@ awslocal lambda create-function \
     --handler index.handler \
     --zip-file fileb://dist/update-todo.zip \
     --environment Variables="{TODOS_TABLE_NAME=todos,AWS_REGION=eu-west-2}" \
-    --region eu-west-2
+    --region eu-west-2 \
+    --no-cli-pager
 
 echo "Lambda functions deployed to LocalStack!"
 echo "------------------------------------------------"
@@ -103,4 +106,7 @@ API_ENDPOINT="http://localhost:4566/restapis/$API_ID/prod/_user_request_"
 echo "Your API Endpoint is ready! You can test it at: $API_ENDPOINT"
 
 echo "API_URL=$API_ENDPOINT" > .env.test
+
+
+
 echo "Wrote API endpoint to .env.test file."

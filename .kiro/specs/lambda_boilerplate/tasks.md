@@ -125,3 +125,46 @@
   - Include examples of common customizations (changing API endpoints, data models, etc.)
   - Add guidance on what to keep vs. what to modify for different project types
   - _Requirements: 1.1, 1.3 - supporting developer experience and project reusability_
+
+- [x] 16. Create Cognito User Pool infrastructure
+
+  - Create Cognito User Pool and App Client in Terraform with free tier optimized configuration
+  - Configure minimal required features to stay within free tier limits (50,000 MAUs)
+  - Disable advanced security features that incur additional costs (risk-based authentication, etc.)
+  - Use standard user pool features only (no identity pools or federated identities initially)
+  - Add Cognito permissions to IAM roles (Lambda execution and GitHub Actions)
+  - Add environment variables for Cognito configuration
+  - _Requirements: Cost-effective authentication infrastructure within free tier_
+
+- [x] 17 Configure API Gateway authentication
+
+  - Configure API Gateway to use Cognito User Pool authorizer for all endpoints
+  - Update all existing API methods to require authentication
+  - Ensure backward compatibility by making authentication configurable via environment variable
+  - _Requirements: Secure API endpoints with authentication_
+
+- [x] 18 Update Lambda handlers for user context
+
+  - Update Lambda handlers to extract and use user information from JWT claims
+  - Create authentication utilities for extracting user context from API Gateway events
+  - Add user scoping to DynamoDB operations (todos belong to authenticated users)
+  - Update data models to include userId field and filter operations by user
+  - _Requirements: User data isolation and secure data access_
+
+- [x] 19 Update local development and testing
+
+  - Add LocalStack Cognito configuration for local development
+  - Update integration tests to handle authentication (mock authorizer context)
+  - Update smoke tests to authenticate before making API calls
+  - Create test user management utilities for testing
+  - Remove enable_cognito_auth conditional logic - auth should always be enabled
+  - Update Terraform configuration to always enable Cognito authentication
+  - Handle LocalStack limitations (no Cognito in free tier) while keeping auth always enabled
+  - _Requirements: Maintainable development and testing workflow with always-enabled authentication_
+
+- [x] 20 Update documentation and cost estimation
+
+  - Update documentation with authentication examples and manual testing instructions
+  - Update cost estimation in README to include Cognito free tier usage
+  - Add authentication setup guide to SETUP_GUIDE.md
+  - _Requirements: Clear documentation for authentication usage_

@@ -101,117 +101,15 @@ cat > trust-policy-prod.json << EOF
 }
 EOF
 
-# Create deployment policy
-print_status "Creating deployment policy..."
+# Use centralized deployment policy
+print_status "Using centralized deployment policy..."
+POLICY_FILE=".github/policies/github-actions-deployment-policy.json"
 
-cat > deployment-policy.json << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:CreateTable",
-        "dynamodb:DeleteTable",
-        "dynamodb:DescribeTable",
-        "dynamodb:ListTables",
-        "dynamodb:TagResource",
-        "dynamodb:UntagResource",
-        "dynamodb:ListTagsOfResource",
-        "dynamodb:UpdateTable",
-        "dynamodb:UpdateContinuousBackups",
-        "dynamodb:DescribeContinuousBackups",
-        "dynamodb:DescribeTimeToLive",
-        "dynamodb:UpdateTimeToLive",
-        "dynamodb:PutItem",
-        "dynamodb:GetItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:Scan",
-        "dynamodb:Query"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "lambda:CreateFunction",
-        "lambda:DeleteFunction",
-        "lambda:GetFunction",
-        "lambda:GetFunctionConfiguration",
-        "lambda:GetFunctionCodeSigningConfig",
-        "lambda:ListFunctions",
-        "lambda:ListVersionsByFunction",
-        "lambda:UpdateFunctionCode",
-        "lambda:UpdateFunctionConfiguration",
-        "lambda:TagResource",
-        "lambda:UntagResource",
-        "lambda:AddPermission",
-        "lambda:RemovePermission",
-        "lambda:GetPolicy"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "apigateway:*"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "iam:CreateRole",
-        "iam:DeleteRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "iam:AttachRolePolicy",
-        "iam:DetachRolePolicy",
-        "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies",
-        "iam:CreatePolicy",
-        "iam:DeletePolicy",
-        "iam:GetPolicy",
-        "iam:GetPolicyVersion",
-        "iam:ListPolicyVersions",
-        "iam:TagRole",
-        "iam:UntagRole",
-        "iam:TagPolicy",
-        "iam:UntagPolicy",
-        "iam:ListInstanceProfilesForRole"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:DeleteLogGroup",
-        "logs:DescribeLogGroups",
-        "logs:PutRetentionPolicy",
-        "logs:ListTagsForResource",
-        "logs:TagLogGroup",
-        "logs:UntagLogGroup"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::terraform-state-*",
-        "arn:aws:s3:::terraform-state-*/*"
-      ]
-    }
-  ]
-}
-EOF
+if [ ! -f "$POLICY_FILE" ]; then
+    print_error "Policy file not found: $POLICY_FILE"
+    print_error "Please ensure the repository contains the centralized policy file."
+    exit 1
+fi
 
 # Create IAM roles
 print_status "Creating IAM roles..."
@@ -231,7 +129,7 @@ print_status "Creating and attaching deployment policy..."
 
 aws iam create-policy \
   --policy-name ServerlessTodoDeploymentPolicy \
-  --policy-document file://deployment-policy.json \
+  --policy-document file://$POLICY_FILE \
   2>/dev/null || print_warning "Policy may already exist"
 
 aws iam attach-role-policy \
@@ -245,7 +143,7 @@ aws iam attach-role-policy \
   2>/dev/null || print_warning "Policy may already be attached to prod role"
 
 # Clean up temporary files
-rm -f trust-policy-dev.json trust-policy-prod.json deployment-policy.json
+rm -f trust-policy-dev.json trust-policy-prod.json
 
 print_success "AWS OIDC setup completed!"
 print_status "Next steps:"
