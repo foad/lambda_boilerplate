@@ -273,6 +273,7 @@ jobs:
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_ENV
           echo "Development API deployed at: $API_URL"
           echo "Using Cognito User Pool: $COGNITO_USER_POOL_ID"
+          echo "Using Cognito Client ID: $COGNITO_CLIENT_ID"
 
       - name: Run smoke tests against development API
         run: npm run test:smoke
@@ -431,6 +432,7 @@ jobs:
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_ENV
           echo "Production API deployed at: $API_URL"
           echo "Using Cognito User Pool: $COGNITO_USER_POOL_ID"
+          echo "Using Cognito Client ID: $COGNITO_CLIENT_ID"
 
       - name: Run smoke tests against production API
         run: npm run test:smoke

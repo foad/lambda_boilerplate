@@ -68,7 +68,6 @@ export class TestAuthManager {
   private clientId: string;
 
   constructor(userPoolId?: string, clientId?: string) {
-    // For smoke tests against deployed environment
     this.client = new CognitoIdentityProviderClient({
       region: process.env.AWS_REGION || "eu-west-2",
     });

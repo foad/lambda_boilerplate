@@ -9,7 +9,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "npm run stop-local && npm run local:setup && jest --testPathPattern=\\.integration\\.test\\.ts --testPathIgnorePatterns=''",
-    "test:smoke": "jest --testPathIgnorePatterns='/node_modules/' --testPathPattern='smoke-tests' --testTimeout=60000",
+    "test:smoke": "jest --testPathIgnorePatterns='/node_modules/' --testPathPattern='smoke-tests' --testTimeout=60000 --setupFilesAfterEnv='<rootDir>/src/test-setup.smoke.ts'",
     "test:all": "jest --testPathIgnorePatterns=''",
     "lint": "eslint src/**/*.ts",
     "clean": "rm -rf dist",
