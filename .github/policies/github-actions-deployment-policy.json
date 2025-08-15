@@ -107,7 +107,8 @@
         "cognito-idp:AdminGetUser",
         "cognito-idp:AdminDeleteUser",
         "cognito-idp:AdminCreateUser",
-        "cognito-idp:AdminSetUserPassword"
+        "cognito-idp:AdminSetUserPassword",
+        "cognito-idp:AdminInitiateAuth"
       ],
       "Resource": "*"
     },
