@@ -404,7 +404,11 @@ The "Destroy Infrastructure" workflow allows you to tear down AWS resources for 
 
 **What Gets Destroyed:**
 
-- All AWS infrastructure (Lambda functions, API Gateway, DynamoDB tables, IAM roles, etc.)
+- All Lambda functions
+- API Gateway REST API
+- DynamoDB tables
+- IAM roles
+- Cognito User Pool (and all user accounts)
 - CloudWatch log groups and their contents
 
 **What Gets Preserved by Default:**
