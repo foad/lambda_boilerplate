@@ -27,3 +27,5 @@ variable "enable_remote_state" {
   type        = bool
   default     = false
 }
+
+

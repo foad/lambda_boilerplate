@@ -8,24 +8,40 @@ import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamoClient, getTableName } from "../lib/dynamodb";
 import {
   createSuccessResponse,
+  createValidationErrorResponse,
   createInternalErrorResponse,
 } from "../lib/responses";
 import { Todo } from "../lib/types";
+import { getUserId } from "../lib/auth";
 
 /**
  * Lambda handler for retrieving all todo items
  */
 export const handler = async (
-  _: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
+    // Extract user context from the request
+    const userIdResult = getUserId(event);
+    if (typeof userIdResult !== "string") {
+      return createValidationErrorResponse("Authentication failed", {
+        error: userIdResult.message,
+        code: userIdResult.code,
+      });
+    }
+    const userId = userIdResult;
+
     // Get DynamoDB client and table name
     const dynamoClient = getDynamoClient();
     const tableName = getTableName();
 
-    // Scan the table to get all todos
+    // Scan the table to get todos for the authenticated user
     const scanCommand = new ScanCommand({
       TableName: tableName,
+      FilterExpression: "userId = :userId",
+      ExpressionAttributeValues: {
+        ":userId": userId,
+      },
     });
 
     const result = await dynamoClient.send(scanCommand);
@@ -33,7 +49,7 @@ export const handler = async (
     // Extract todos from the result, ensuring type safety
     const todos: Todo[] = (result.Items || []) as Todo[];
 
-    // Return success response with todos array (empty array if no todos exist)
+    // Return success response with user's todos array (empty array if no todos exist)
     return createSuccessResponse(todos, 200);
   } catch (error) {
     console.error("Error reading todos:", error);

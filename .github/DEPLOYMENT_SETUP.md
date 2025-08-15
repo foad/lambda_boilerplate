@@ -95,122 +95,25 @@ aws iam create-role \
 
 ### 3. Create IAM Policies
 
-Create a file `deployment-policy.json`:
+The deployment policy is centralized in `.github/policies/github-actions-deployment-policy.json`. This policy includes permissions for:
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:CreateTable",
-        "dynamodb:DeleteTable",
-        "dynamodb:DescribeTable",
-        "dynamodb:ListTables",
-        "dynamodb:TagResource",
-        "dynamodb:UntagResource",
-        "dynamodb:ListTagsOfResource",
-        "dynamodb:UpdateTable",
-        "dynamodb:UpdateContinuousBackups",
-        "dynamodb:DescribeContinuousBackups",
-        "dynamodb:DescribeTimeToLive",
-        "dynamodb:UpdateTimeToLive",
-        "dynamodb:PutItem",
-        "dynamodb:GetItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:Scan",
-        "dynamodb:Query"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "lambda:CreateFunction",
-        "lambda:DeleteFunction",
-        "lambda:GetFunction",
-        "lambda:GetFunctionConfiguration",
-        "lambda:GetFunctionCodeSigningConfig",
-        "lambda:ListFunctions",
-        "lambda:ListVersionsByFunction",
-        "lambda:UpdateFunctionCode",
-        "lambda:UpdateFunctionConfiguration",
-        "lambda:TagResource",
-        "lambda:UntagResource",
-        "lambda:AddPermission",
-        "lambda:RemovePermission",
-        "lambda:GetPolicy"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["apigateway:*"],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "iam:CreateRole",
-        "iam:DeleteRole",
-        "iam:GetRole",
-        "iam:PassRole",
-        "iam:AttachRolePolicy",
-        "iam:DetachRolePolicy",
-        "iam:ListAttachedRolePolicies",
-        "iam:ListRolePolicies",
-        "iam:CreatePolicy",
-        "iam:DeletePolicy",
-        "iam:GetPolicy",
-        "iam:GetPolicyVersion",
-        "iam:ListPolicyVersions",
-        "iam:TagRole",
-        "iam:UntagRole",
-        "iam:TagPolicy",
-        "iam:UntagPolicy",
-        "iam:ListInstanceProfilesForRole"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:DeleteLogGroup",
-        "logs:DescribeLogGroups",
-        "logs:PutRetentionPolicy",
-        "logs:ListTagsForResource",
-        "logs:TagLogGroup",
-        "logs:UntagLogGroup"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::terraform-state-*",
-        "arn:aws:s3:::terraform-state-*/*"
-      ]
-    }
-  ]
-}
-```
+- **DynamoDB**: Full table management with point-in-time recovery, TTL, and tagging
+- **Lambda**: Function creation, updates, and permission management
+- **API Gateway**: Complete REST API setup with CORS
+- **IAM**: Role and policy management for Lambda execution
+- **CloudWatch**: Log group management
+- **Cognito**: User Pool and Client management for authentication
+- **S3**: Terraform state storage access
+
+The policy follows the principle of least privilege while ensuring all Terraform operations can complete successfully.
 
 Create and attach the policy:
 
 ```bash
-# Create the policy
+# Create the policy using the centralized policy file
 aws iam create-policy \
   --policy-name ServerlessTodoDeploymentPolicy \
-  --policy-document file://deployment-policy.json
+  --policy-document file://.github/policies/github-actions-deployment-policy.json
 
 # Attach to development role
 aws iam attach-role-policy \
@@ -222,6 +125,8 @@ aws iam attach-role-policy \
   --role-name GitHubActions-ServerlessTodo-Prod \
   --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/ServerlessTodoDeploymentPolicy
 ```
+
+> **Note**: The automated setup script `scripts/setup-aws-oidc.sh` uses this centralized policy file automatically.
 
 ## GitHub Repository Configuration
 

@@ -262,17 +262,24 @@ jobs:
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
-      - name: Get API Gateway URL
+      - name: Get API Gateway URL and Cognito credentials
         working-directory: terraform
         run: |
           API_URL=$(terraform output -raw api_gateway_url)
+          COGNITO_USER_POOL_ID=$(terraform output -raw cognito_user_pool_id)
+          COGNITO_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_ENV
           echo "Development API deployed at: $API_URL"
+          echo "Using Cognito User Pool: $COGNITO_USER_POOL_ID"
 
       - name: Run smoke tests against development API
         run: npm run test:smoke
         env:
           API_BASE_URL: ${{ env.API_URL }}
+          COGNITO_USER_POOL_ID: ${{ env.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ env.COGNITO_CLIENT_ID }}
 
       - name: Create deployment record
         uses: actions/github-script@v7
@@ -413,17 +420,24 @@ jobs:
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
-      - name: Get API Gateway URL
+      - name: Get API Gateway URL and Cognito credentials
         working-directory: terraform
         run: |
           API_URL=$(terraform output -raw api_gateway_url)
+          COGNITO_USER_POOL_ID=$(terraform output -raw cognito_user_pool_id)
+          COGNITO_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id)
           echo "API_URL=$API_URL" >> $GITHUB_ENV
+          echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" >> $GITHUB_ENV
+          echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_ENV
           echo "Production API deployed at: $API_URL"
+          echo "Using Cognito User Pool: $COGNITO_USER_POOL_ID"
 
       - name: Run smoke tests against production API
         run: npm run test:smoke
         env:
           API_BASE_URL: ${{ env.API_URL }}
+          COGNITO_USER_POOL_ID: ${{ env.COGNITO_USER_POOL_ID }}
+          COGNITO_CLIENT_ID: ${{ env.COGNITO_CLIENT_ID }}
 
       - name: Create deployment record
         uses: actions/github-script@v7

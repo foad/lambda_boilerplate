@@ -100,8 +100,27 @@ jobs:
           POLICY_ARN="arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/${ENV}-lambda-dynamodb-policy"
           terraform import aws_iam_role_policy_attachment.lambda_dynamodb_policy_attachment "${ENV}-lambda-execution-role/${POLICY_ARN}" || echo "DynamoDB policy attachment not found"
 
+          # Import Cognito IAM policy and attachment
+          COGNITO_POLICY_ARN="arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/${ENV}-lambda-cognito-policy"
+          terraform import aws_iam_policy.lambda_cognito_policy "$COGNITO_POLICY_ARN" || echo "Cognito IAM policy not found"
+          terraform import aws_iam_role_policy_attachment.lambda_cognito_policy_attachment "${ENV}-lambda-execution-role/${COGNITO_POLICY_ARN}" || echo "Cognito policy attachment not found"
+
           # Import DynamoDB table
           terraform import aws_dynamodb_table.todos "${ENV}-todos" || echo "todos table not found"
+
+          # Import Cognito resources
+          terraform import aws_cognito_user_pool.main "${ENV}-todo-user-pool" || echo "Cognito user pool not found"
+
+          # Get User Pool ID for client import
+          USER_POOL_ID=$(aws cognito-idp list-user-pools --max-items 50 --query "UserPools[?Name=='${ENV}-todo-user-pool'].Id" --output text)
+          if [ ! -z "$USER_POOL_ID" ] && [ "$USER_POOL_ID" != "None" ] && [ "$USER_POOL_ID" != "null" ]; then
+            echo "Found User Pool: $USER_POOL_ID"
+            # Import User Pool Client
+            CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$USER_POOL_ID" --query "UserPoolClients[?ClientName=='${ENV}-todo-app-client'].ClientId" --output text)
+            if [ ! -z "$CLIENT_ID" ] && [ "$CLIENT_ID" != "None" ] && [ "$CLIENT_ID" != "null" ]; then
+              terraform import aws_cognito_user_pool_client.main "${USER_POOL_ID}/${CLIENT_ID}" || echo "Cognito user pool client import failed"
+            fi
+          fi
 
           # Import Lambda functions
           terraform import aws_lambda_function.create_todo "${ENV}-create-todo" || echo "create-todo function not found"
@@ -118,6 +137,12 @@ jobs:
           if [ ! -z "$API_ID" ] && [ "$API_ID" != "None" ] && [ "$API_ID" != "null" ]; then
             echo "Found API Gateway: $API_ID"
             terraform import aws_api_gateway_rest_api.todos_api "$API_ID" || echo "API Gateway import failed"
+            
+            # Import Cognito Authorizer
+            AUTHORIZER_ID=$(aws apigateway get-authorizers --rest-api-id "$API_ID" --query "items[?name=='${ENV}-cognito-authorizer'].id" --output text)
+            if [ ! -z "$AUTHORIZER_ID" ] && [ "$AUTHORIZER_ID" != "None" ] && [ "$AUTHORIZER_ID" != "null" ]; then
+              terraform import aws_api_gateway_authorizer.cognito_authorizer "$API_ID/$AUTHORIZER_ID" || echo "Cognito authorizer import failed"
+            fi
             
             # Import API Gateway deployment and stage
             DEPLOYMENT_ID=$(aws apigateway get-deployments --rest-api-id "$API_ID" --query "items[0].id" --output text)

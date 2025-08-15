@@ -89,4 +89,35 @@ output "api_gateway_stage_name" {
   value       = aws_api_gateway_stage.todos_api_stage.stage_name
 }
 
+# Cognito outputs
+output "cognito_user_pool_id" {
+  description = "ID of the Cognito User Pool"
+  value       = aws_cognito_user_pool.main.id
+}
+
+output "cognito_user_pool_arn" {
+  description = "ARN of the Cognito User Pool"
+  value       = aws_cognito_user_pool.main.arn
+}
+
+output "cognito_user_pool_client_id" {
+  description = "ID of the Cognito User Pool Client"
+  value       = aws_cognito_user_pool_client.main.id
+}
+
+output "cognito_user_pool_endpoint" {
+  description = "Endpoint of the Cognito User Pool"
+  value       = aws_cognito_user_pool.main.endpoint
+}
+
+output "cognito_auth_enabled" {
+  description = "Whether Cognito authentication is enabled"
+  value       = true
+}
+
+output "api_gateway_authorizer_id" {
+  description = "ID of the API Gateway Cognito authorizer"
+  value       = aws_api_gateway_authorizer.cognito_authorizer.id
+}
+
 

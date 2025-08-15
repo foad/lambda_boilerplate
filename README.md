@@ -25,13 +25,43 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
 - **Development**: `https://{api-id}.execute-api.{region}.amazonaws.com/development`
 - **Local**: `http://localhost:4566/restapis/{api-id}/production/_user_request_`
 
+### Authentication
+
+All API endpoints require authentication using AWS Cognito User Pool. You need to include a valid JWT token in the `Authorization` header.
+
+**Authentication Header:**
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+**Getting a JWT Token:**
+
+You can obtain a JWT token by authenticating with the Cognito User Pool using AWS SDK or AWS CLI:
+
+```bash
+# Using AWS CLI to authenticate and get tokens
+aws cognito-idp initiate-auth \
+  --auth-flow USER_PASSWORD_AUTH \
+  --client-id <your-client-id> \
+  --auth-parameters USERNAME=<username>,PASSWORD=<password>
+```
+
 ### Endpoints
 
 #### Create Todo
 
 - **Method**: `POST`
 - **Path**: `/todos`
-- **Description**: Creates a new todo item
+- **Description**: Creates a new todo item for the authenticated user
+- **Authentication**: Required
+
+**Request Headers:**
+
+```
+Content-Type: application/json
+Authorization: Bearer <jwt-token>
+```
 
 **Request Body:**
 
@@ -49,6 +79,7 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
     "id": "123e4567-e89b-12d3-a456-426614174000",
     "title": "Buy groceries",
     "status": "pending",
+    "userId": "user-123",
     "createdAt": "2024-01-15T10:30:00.000Z",
     "updatedAt": "2024-01-15T10:30:00.000Z"
   }
@@ -69,11 +100,29 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
 }
 ```
 
+**Error Response (401):**
+
+```json
+{
+  "error": {
+    "message": "Unauthorized",
+    "code": "UNAUTHORIZED"
+  }
+}
+```
+
 #### Get All Todos
 
 - **Method**: `GET`
 - **Path**: `/todos`
-- **Description**: Retrieves all todo items
+- **Description**: Retrieves all todo items for the authenticated user
+- **Authentication**: Required
+
+**Request Headers:**
+
+```
+Authorization: Bearer <jwt-token>
+```
 
 **Success Response (200):**
 
@@ -84,6 +133,7 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
       "id": "123e4567-e89b-12d3-a456-426614174000",
       "title": "Buy groceries",
       "status": "pending",
+      "userId": "user-123",
       "createdAt": "2024-01-15T10:30:00.000Z",
       "updatedAt": "2024-01-15T10:30:00.000Z"
     },
@@ -91,6 +141,7 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
       "id": "987fcdeb-51a2-43d1-9c4f-123456789abc",
       "title": "Walk the dog",
       "status": "completed",
+      "userId": "user-123",
       "createdAt": "2024-01-15T09:15:00.000Z",
       "updatedAt": "2024-01-15T11:45:00.000Z"
     }
@@ -110,7 +161,14 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
 
 - **Method**: `PUT`
 - **Path**: `/todos/{id}/complete`
-- **Description**: Marks a todo as completed
+- **Description**: Marks a todo as completed for the authenticated user
+- **Authentication**: Required
+
+**Request Headers:**
+
+```
+Authorization: Bearer <jwt-token>
+```
 
 **Success Response (200):**
 
@@ -120,6 +178,7 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
     "id": "123e4567-e89b-12d3-a456-426614174000",
     "title": "Buy groceries",
     "status": "completed",
+    "userId": "user-123",
     "createdAt": "2024-01-15T10:30:00.000Z",
     "updatedAt": "2024-01-15T12:00:00.000Z"
   }
@@ -142,26 +201,41 @@ Follow the [Setup Guide](SETUP_GUIDE.md) for detailed instructions on using this
 #### Using curl
 
 ```bash
+# First, get a JWT token (replace with your Cognito User Pool details)
+JWT_TOKEN=$(aws cognito-idp initiate-auth \
+  --auth-flow USER_PASSWORD_AUTH \
+  --client-id <your-client-id> \
+  --auth-parameters USERNAME=<username>,PASSWORD=<password> \
+  --query 'AuthenticationResult.AccessToken' \
+  --output text)
+
 # Create a todo
 curl -X POST https://your-api-url/todos \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $JWT_TOKEN" \
   -d '{"title": "Learn serverless architecture"}'
 
 # Get all todos
-curl https://your-api-url/todos
+curl https://your-api-url/todos \
+  -H "Authorization: Bearer $JWT_TOKEN"
 
 # Complete a todo
-curl -X PUT https://your-api-url/todos/123e4567-e89b-12d3-a456-426614174000/complete
+curl -X PUT https://your-api-url/todos/123e4567-e89b-12d3-a456-426614174000/complete \
+  -H "Authorization: Bearer $JWT_TOKEN"
 ```
 
 #### Using JavaScript/Fetch
 
 ```javascript
+// Assume you have obtained a JWT token from Cognito
+const jwtToken = "your-jwt-token-here";
+
 // Create a todo
 const response = await fetch("https://your-api-url/todos", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${jwtToken}`,
   },
   body: JSON.stringify({
     title: "Learn serverless architecture",
@@ -170,7 +244,11 @@ const response = await fetch("https://your-api-url/todos", {
 const newTodo = await response.json();
 
 // Get all todos
-const todosResponse = await fetch("https://your-api-url/todos");
+const todosResponse = await fetch("https://your-api-url/todos", {
+  headers: {
+    Authorization: `Bearer ${jwtToken}`,
+  },
+});
 const todos = await todosResponse.json();
 
 // Complete a todo
@@ -178,10 +256,19 @@ const completeResponse = await fetch(
   `https://your-api-url/todos/${todoId}/complete`,
   {
     method: "PUT",
+    headers: {
+      Authorization: `Bearer ${jwtToken}`,
+    },
   }
 );
 const completedTodo = await completeResponse.json();
 ```
+
+#### Manual Testing with Postman
+
+1. **Get JWT Token**: Use AWS CLI or Cognito SDK to authenticate and get a token
+2. **Set Authorization Header**: In Postman, add `Authorization: Bearer <your-jwt-token>`
+3. **Make Requests**: All API calls will now include user context automatically
 
 ## 🛠️ Local Development with LocalStack
 
@@ -317,7 +404,11 @@ The "Destroy Infrastructure" workflow allows you to tear down AWS resources for 
 
 **What Gets Destroyed:**
 
-- All AWS infrastructure (Lambda functions, API Gateway, DynamoDB tables, IAM roles, etc.)
+- All Lambda functions
+- API Gateway REST API
+- DynamoDB tables
+- IAM roles
+- Cognito User Pool (and all user accounts)
 - CloudWatch log groups and their contents
 
 **What Gets Preserved by Default:**
@@ -357,19 +448,21 @@ If you want to completely remove everything including shared state storage:
 
 ### Cost Estimation
 
-| Component            | Idle Cost             | Light Usage (1000 requests/month) |
-| -------------------- | --------------------- | --------------------------------- |
-| **API Gateway**      | $0.00                 | ~$0.0035                          |
-| **Lambda Functions** | $0.00                 | ~$0.0001                          |
-| **DynamoDB**         | $0.00-0.02            | ~$0.25                            |
-| **CloudWatch Logs**  | ~$0.01                | ~$0.50                            |
-| **Total**            | **~$0.01-0.03/month** | **~$0.75/month**                  |
+| Component             | Idle Cost             | Light Usage (1000 requests/month) |
+| --------------------- | --------------------- | --------------------------------- |
+| **API Gateway**       | $0.00                 | ~$0.0035                          |
+| **Lambda Functions**  | $0.00                 | ~$0.0001                          |
+| **DynamoDB**          | $0.00-0.02            | ~$0.25                            |
+| **Cognito User Pool** | $0.00                 | ~$0.00                            |
+| **CloudWatch Logs**   | ~$0.01                | ~$0.50                            |
+| **Total**             | **~$0.01-0.03/month** | **~$0.75/month**                  |
 
 **Notes**:
 
 - Costs scale with usage (pay-per-request model)
 - No charges for idle time on Lambda and API Gateway
 - DynamoDB uses on-demand billing
+- Free tier includes 50,000 Monthly Active Users (MAUs) for Cognito
 - Development environment has similar costs
 
 ## 🏗️ Architecture
