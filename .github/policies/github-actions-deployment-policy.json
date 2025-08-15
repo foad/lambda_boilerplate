@@ -106,7 +106,8 @@
         "cognito-idp:GetUserPoolMfaConfig",
         "cognito-idp:AdminGetUser",
         "cognito-idp:AdminDeleteUser",
-        "cognito-idp:AdminCreateUser"
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminSetUserPassword"
       ],
       "Resource": "*"
     },
