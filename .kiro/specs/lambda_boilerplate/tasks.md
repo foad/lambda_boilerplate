@@ -162,7 +162,7 @@
   - Handle LocalStack limitations (no Cognito in free tier) while keeping auth always enabled
   - _Requirements: Maintainable development and testing workflow with always-enabled authentication_
 
-- [ ] 20 Update documentation and cost estimation
+- [x] 20 Update documentation and cost estimation
 
   - Update documentation with authentication examples and manual testing instructions
   - Update cost estimation in README to include Cognito free tier usage
